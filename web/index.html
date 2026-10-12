@@ -45,74 +45,97 @@
     <main>
       <section class="view wrap" id="view-find">
         <p class="kicker">Akathaha · JN Bhasin</p>
-        <h1>Find the beeja</h1>
-        <p class="lede">The reference letter is the first letter of the name you are called by, or the Moon’s janma syllable. The sixteen houses then keep, delay, or refuse each seed.</p>
-        <div id="hero"></div>
-        <div class="grid-2">
+        <ol class="progress" aria-label="Steps">
+          <li><button type="button" data-act="step" data-step="name" aria-current="step"><span>1</span> Name</button></li>
+          <li><button type="button" data-act="step" data-step="birth"><span>2</span> Birth</button></li>
+          <li><button type="button" data-act="step" data-step="result"><span>3</span> Beeja</button></li>
+        </ol>
+        <h1 id="find-title">1. Give the name</h1>
+        <p class="lede" id="find-lede">The beeja starts from the name you are called by. Only the first Sanskrit letter is counted.</p>
+
+        <div id="step-name" class="step-panel">
           <div class="card stack">
-            <div>
-              <div class="segment" role="tablist" aria-label="Reference letter">
-                <button data-act="source" data-source="name" aria-selected="true">Called name</button>
-                <button data-act="source" data-source="nakshatra" aria-selected="false">Janma letter</button>
-              </div>
+            <div class="why">
+              <strong>How this step is counted.</strong>
+              <p>The whole name is not placed on the chakra. The first syllable is reduced to its base letter. In कुमार the first syllable is कु, which is क with the vowel उ, so the letter that enters is क. An English spelling is only a hint, because it cannot tell त from ट, or श from ष. The letter you confirm here is the letter the later steps measure.</p>
             </div>
             <label class="field">Name you are called by
               <input id="name" type="text" autocomplete="off" placeholder="Kumar, or कुमार" spellcheck="false">
             </label>
             <div id="guess"></div>
+            <p id="chosen" class="small muted">No letter confirmed yet.</p>
             <div>
-              <div class="small muted">Tap the Sanskrit first letter. English spelling is only a suggestion.</div>
+              <div class="small muted">If the suggestion is wrong, tap the right letter.</div>
               <div id="picker" class="picker"></div>
               <div id="outside" class="outside-row"></div>
             </div>
             <div class="actions">
-              <button class="btn-quiet" data-act="preset" data-preset="kumar">Example: Kumar</button>
-              <button class="btn-quiet" data-act="preset" data-preset="devadatta">Example: Devadatta</button>
+              <button class="btn" id="to-birth" type="button" data-act="step" data-step="birth" disabled>Continue to birth details</button>
+              <button class="btn-quiet" type="button" data-act="preset" data-preset="kumar">Fill Kumar</button>
             </div>
           </div>
-          <div class="card" id="find-side"></div>
+        </div>
+
+        <div id="step-birth" class="step-panel" hidden>
+          <div class="card stack">
+            <div class="why">
+              <strong>How this step is counted.</strong>
+              <p>Skip it, and the seed is taken from the name letter alone. If you enter a birth, the chart is sidereal, whole-sign, with the JN Bhasin ayanamsha. The lagna lord is tested first: not debilitated, not combust, and in a kendra, a trikona, or its own, moolatrikona, or exalted sign. Its letter must also survive the chakra. If the lord fails, the same test is applied to the yogakaraka. If both fail, the count returns to the name letter.</p>
+            </div>
+            <label class="field">Place of birth
+              <input id="place" type="text" autocomplete="off" placeholder="Chennai, Madurai, London">
+            </label>
+            <div id="places" class="suggest"></div>
+            <p class="small muted">Tap a place in the list. Latitude, longitude, and timezone fill themselves.</p>
+            <div class="row-3">
+              <label class="field">Latitude
+                <input id="lat" type="number" step="0.0001" placeholder="13.0827">
+              </label>
+              <label class="field">Longitude
+                <input id="lon" type="number" step="0.0001" placeholder="80.2707">
+              </label>
+              <label class="field">Timezone
+                <input id="tz" type="text" placeholder="Asia/Kolkata">
+              </label>
+            </div>
+            <div class="row-2">
+              <label class="field">Date of birth
+                <input id="date" type="date">
+              </label>
+              <label class="field">Time of birth
+                <input id="time" type="time" value="12:00">
+              </label>
+            </div>
+            <label class="check"><input id="unknown" type="checkbox"> Birth time unknown. Noon is used for the Moon only. The lagna is not allowed to choose the beeja.</label>
+            <div>
+              <div class="small muted">Rahu’s position. Mean node is the usual choice. It does not change the name letter.</div>
+              <div class="segment" role="group" aria-label="Lunar node">
+                <button type="button" data-act="node" data-node="mean" aria-selected="true">Mean node</button>
+                <button type="button" data-act="node" data-node="true" aria-selected="false">True node</button>
+              </div>
+            </div>
+            <p id="chart-error" class="warn" hidden></p>
+            <div class="actions">
+              <button class="btn" id="calc" type="button">Find the beeja</button>
+              <button class="btn-quiet" id="skip-birth" type="button" data-act="skip-birth">Skip birth details</button>
+              <button class="btn-quiet" id="sample" type="button">Fill a sample: Delhi, 15 Aug 1990, 10:30</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="step-result" class="step-panel" hidden>
+          <div id="hero"></div>
+          <div class="grid-2">
+            <div class="card" id="calc-steps"></div>
+            <div class="card" id="find-side"></div>
+          </div>
         </div>
       </section>
 
       <section class="view wrap" id="view-chart" hidden>
         <p class="kicker">Swiss Ephemeris · sidereal</p>
         <h1>Birth chart</h1>
-        <p class="lede">Whole-sign houses, South Indian and North Indian figures, ayanamsha locked to JN Bhasin. The positions come from the Swiss Ephemeris, the astronomical library drik panchangas are built on.</p>
-        <div class="card stack" style="margin-bottom:16px">
-          <label class="field">Place
-            <input id="place" type="text" autocomplete="off" placeholder="Chennai, Madurai, London">
-          </label>
-          <div id="places" class="suggest"></div>
-          <div class="row-3">
-            <label class="field">Latitude
-              <input id="lat" type="number" step="0.0001" placeholder="13.0827">
-            </label>
-            <label class="field">Longitude
-              <input id="lon" type="number" step="0.0001" placeholder="80.2707">
-            </label>
-            <label class="field">Timezone
-              <input id="tz" type="text" placeholder="Asia/Kolkata">
-            </label>
-          </div>
-          <div class="row-2">
-            <label class="field">Date
-              <input id="date" type="date">
-            </label>
-            <label class="field">Time
-              <input id="time" type="time" value="12:00">
-            </label>
-          </div>
-          <label class="check"><input id="unknown" type="checkbox"> Birth time unknown. Noon is used, and the lagna is not allowed to choose the beeja.</label>
-          <div class="segment" role="group" aria-label="Lunar node">
-            <button data-act="node" data-node="mean" aria-selected="true">Mean node</button>
-            <button data-act="node" data-node="true" aria-selected="false">True node</button>
-          </div>
-          <div class="actions">
-            <button class="btn" id="calc" type="button">Calculate chart</button>
-            <button class="btn-quiet" id="sample" type="button">Fill a sample: Delhi, 15 Aug 1990, 10:30</button>
-          </div>
-          <p id="chart-error" class="warn" hidden></p>
-        </div>
+        <p class="lede">South Indian and North Indian figures for the birth entered in step 2. Ayanamsha is JN Bhasin. Houses are whole-sign.</p>
         <div id="chart-out"></div>
       </section>
 

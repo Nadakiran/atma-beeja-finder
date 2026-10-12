@@ -74,6 +74,47 @@ button { cursor: pointer; }
 h1 { margin: 0 0 8px; font-size: 34px; font-weight: 650; letter-spacing: -0.03em; }
 .lede { margin: 0 0 22px; color: var(--sub); font-size: 17px; line-height: 1.45; max-width: 62ch; }
 
+.progress { display: flex; gap: 8px; list-style: none; padding: 0; margin: 0 0 18px; }
+.progress li { flex: 1; }
+.progress button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,0.7);
+  border-radius: 14px;
+  padding: 8px 10px;
+  color: var(--sub);
+}
+.progress button span {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: #ececf1; color: var(--ink); font-size: 12px;
+}
+.progress button[aria-current="step"] {
+  color: var(--ink);
+  background: #fff;
+  box-shadow: var(--shadow);
+}
+.progress button[aria-current="step"] span { background: var(--ink); color: #fff; }
+.step-panel[hidden] { display: none !important; }
+.why { background: var(--soft); border-radius: 16px; padding: 12px 14px; line-height: 1.5; }
+.why p { margin: 6px 0 0; }
+.choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: #fff;
+}
+.choice .sound { font-family: var(--dev); font-size: 40px; line-height: 1; }
+.steps strong { display: block; margin-bottom: 2px; }
+.steps p { margin: 0; }
+
 .card {
   background: var(--card);
   border: 1px solid var(--line);

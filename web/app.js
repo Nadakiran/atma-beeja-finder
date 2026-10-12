@@ -5,12 +5,21 @@ import { assess, detectBase, padaOf, recommend, showYoga } from "./logic.js";
 
 const state = {
   view: "find",
+  step: "name",
   source: "name",
   base: null,
   test: null,
   mode: "essay",
   node: "mean",
   chart: null,
+  birthSkipped: false,
+  name: "",
+};
+
+const STEP_COPY = {
+  name: ["1. Give the name", "The beeja starts from the name you are called by. Only the first Sanskrit letter is counted."],
+  birth: ["2. Birth details", "Optional. Skip this if the chart should not take part. If you enter a birth, the lagna lord is tested before the name letter’s square."],
+  result: ["3. The beeja", "Counted from the letter you confirmed, then from the chart if you entered one."],
 };
 
 const $ = (id) => document.getElementById(id);
@@ -64,6 +73,63 @@ function setPressed(group, attr, value) {
   });
 }
 
+function setStep(step) {
+  if ((step === "birth" || step === "result") && !state.base && !(state.source === "nakshatra" && state.chart)) {
+    step = "name";
+  }
+  if (step === "result" && !state.chart) state.birthSkipped = true;
+  state.step = step;
+  for (const id of ["name", "birth", "result"]) {
+    const el = $(`step-${id}`);
+    if (el) el.hidden = id !== step;
+  }
+  document.querySelectorAll("[data-act=step]").forEach((btn) => {
+    if (btn.dataset.step === step) btn.setAttribute("aria-current", "step");
+    else btn.removeAttribute("aria-current");
+  });
+  const copy = STEP_COPY[step];
+  if (copy && $("find-title")) {
+    $("find-title").textContent = copy[0];
+    $("find-lede").textContent = copy[1];
+  }
+  if (step === "name") paintName();
+  if (step === "result") paintFind();
+}
+
+function paintName() {
+  const typed = $("name")?.value || "";
+  state.name = typed;
+  const guess = detectBase(typed);
+  const box = $("guess");
+  const chosen = $("chosen");
+  if (chosen) {
+    chosen.innerHTML = state.base
+      ? `Letter confirmed for the chakra: <span class="dev">${esc(state.base)}</span>`
+      : "No letter confirmed yet.";
+  }
+  if (box) {
+    if (!guess) {
+      box.innerHTML = typed.trim()
+        ? `<p class="small">This spelling did not match a Sanskrit sound. Tap the first letter below.</p>`
+        : "";
+    } else {
+      const iast = LETTERS[guess]?.iast || guess;
+      const same = state.base === guess;
+      box.innerHTML = `<div class="choice">
+        <div>
+          <div class="small muted">First sound of this name</div>
+          <div class="sound">${esc(guess)}</div>
+          <div class="small">${esc(iast)}${same ? " · confirmed" : ""}</div>
+        </div>
+        <button type="button" class="btn" data-act="pick" data-letter="${esc(guess)}">${same ? "Confirmed" : `Use ${guess}`}</button>
+      </div>`;
+    }
+  }
+  const next = $("to-birth");
+  if (next) next.disabled = !state.base;
+  if ($("picker")) paintPicker();
+}
+
 function paintPicker() {
   const base = state.source === "name" ? state.base : activeBase();
   $("picker").innerHTML = PICK.map((L) => {
@@ -100,33 +166,125 @@ function worship(rec) {
   return `<div class="worship"><strong>Worship.</strong> ${bits.join(" ")} <p class="mantra">${esc(rec.primary.text)} · your mantra · ${esc(rec.primary.text)}</p><p class="small muted">Sampuṭa leaves the mantra itself to the practice you already have.</p></div>`;
 }
 
-function paintFind() {
-  paintPicker();
-  const rec = recNow();
-  const hero = $("hero");
-  const side = $("find-side");
-  if (!rec) {
-    hero.innerHTML = `<div class="card hero"><p class="eyebrow">Waiting for a letter</p><p class="lede" style="margin:0">Choose the first Sanskrit letter of the name you are called by. A birth chart can replace that letter with the Moon’s pada, or it can offer the lagna lord’s seed if the chakra allows it.</p></div>`;
-    side.innerHTML = `<h3>What happens next</h3><p class="small">The third square, two rows down and two columns across, is preferred. A fourth row or column is refused. Mantra Mahodadhi’s chatushka count is applied as well, so an ari result is refused even when the rows look kind.</p><p class="small muted">Open Learn for the verses, the Devadatta count, and the Kumar count.</p>`;
-    return;
-  }
-  const steps = [];
+function walkthrough(rec) {
+  const items = [];
+  const push = (title, html) => items.push({ title, html });
+
   if (state.source === "nakshatra" && state.chart) {
     const moon = state.chart.bodies.find((b) => b.id === "chandra");
     const p = padaOf(moon.nakshatraIndex, moon.pada);
-    steps.push(`The reference letter is ${rec.base}, from ${p.nak.name} pada ${moon.pada} (${p.pada.syl}), the Moon’s janma syllable.${state.chart.time.timeUncertain ? " The time was unknown, so this pada is only the noon estimate." : ""}`);
+    push(
+      "The Moon’s syllable is the letter",
+      `<p>Each nakshatra is 13°20′, and each of its four padas is 3°20′. The Moon is in ${esc(p.nak.name)}, pada ${moon.pada}, syllable ${esc(p.pada.syl)}. The base of that syllable is ${esc(rec.base)}. Mantra Mahodadhi 24.2 allows this janma name in place of the called name.${state.chart.time.timeUncertain ? " The birth time was unknown, so this pada is the noon position." : ""}</p>`
+    );
   } else {
-    steps.push(`The reference letter is ${rec.base}${state.name ? `, from the name “${state.name}”` : ""}. Only the base consonant or vowel is counted.`);
+    push(
+      "The name becomes one letter",
+      `<p>${state.name ? `From “${esc(state.name)}”, ` : ""}only the first Sanskrit sound is kept, and a following vowel is dropped. The letter that enters the chakra is ${esc(rec.base)}.</p>`
+    );
   }
-  if (rec.home) {
-    steps.push(`${rec.base} stands in house ${rec.home.n}: ${rec.home.letters.join(" ")}.`);
-    steps.push(`The third square is house ${rec.third.n}: ${rec.third.letters.join(" ")}.`);
-  }
-  rec.notes.forEach((n) => steps.push(n));
-  rec.rejected.forEach((r) => steps.push(r.reason));
-  steps.push("Repeat it for a few days. If the mind is disturbed, stop, and take the next suitable seed or श्रीं. A guru is the one who gives it.");
 
-  const thirdBest = (rec.groups?.best || []).filter((a) => a.cell?.n === rec.third?.n).slice(0, 4);
+  if (rec.outside) {
+    push(
+      "This letter has no house",
+      `<p>${esc(rec.base)} is outside the 49-letter akathaha. ${esc(rec.outside.note)} The working method then uses श्रीं, the joining of श with रीं.</p>`
+    );
+  } else if (rec.home && rec.third) {
+    const row = rec.home.r + 1;
+    const col = rec.home.c + 1;
+    push(
+      "The letter is placed on the sixteen houses",
+      `<p>The houses are numbered left to right, top to bottom. ${esc(rec.base)} stands in house ${rec.home.n}, which is row ${row}, column ${col}. The letters that share this house are ${rec.home.letters.map(esc).join(" ")}. Every letter in one house shares one result.</p>`
+    );
+    const letters = rec.third.letters.map((L) => {
+      const a = assess(rec.base, L);
+      const word = a.bucket === "avoid" ? "not used" : a.bucket === "best" ? "best" : "suitable";
+      return `${esc(L)} → ${esc(a.form.text)} (${word})`;
+    }).join("; ");
+    push(
+      "Two steps down and two across",
+      `<p>From row ${row}, column ${col}, add 2 to the row and 2 to the column. The grid wraps after 4. That square is house ${rec.third.n}: ${rec.third.letters.map(esc).join(" ")}. This is the square the atma-bija method prefers. Its letters count as ${letters}.</p>`
+    );
+  }
+
+  if (rec.outside) {
+    push(
+      state.chart ? "The chart cannot move this letter" : "Birth does not change this letter",
+      state.chart
+        ? `<p>${esc(rec.base)} has no house on the chakra, so the lagna lord is not tested against it. The seed remains श्रीं.</p>`
+        : `<p>Whether or not a birth is entered, this letter has no house, so the seed is श्रीं.</p>`
+    );
+  } else if (!state.chart) {
+    push(
+      "Birth was skipped",
+      `<p>No birth was entered, so the lagna lord and the yogakaraka are not tested. The seed stays with the name letter and the square just counted.</p>`
+    );
+  } else if (state.chart.time.timeUncertain) {
+    push(
+      "The birth time was unknown",
+      `<p>Noon was used so the Moon could be placed. The lagna of an unknown time is not allowed to choose the seed. The name letter keeps the decision.</p>`
+    );
+  } else {
+    const c = state.chart;
+    const lordBits = (c.lagnaLord.reasons || []).map((r) => `<li>${esc(r)}</li>`).join("");
+    let yog = `<p>${esc(c.yogakarakaNote)}</p>`;
+    if (c.yogakaraka) {
+      yog += `<ul class="checks">${(c.yogakaraka.reasons || []).map((r) => `<li>${esc(r)}</li>`).join("")}</ul>`;
+    }
+    const refused = (rec.rejected || []).map((r) => `<li>${esc(r.reason)}</li>`).join("");
+    push(
+      "The lagna lord is asked first",
+      `<p>Lagna is ${esc(c.lagna.sign)}. Its lord is tested before any letter in the third square. A lord is kept only when it is not debilitated, not combust, and stands in a kendra, a trikona, or its own, moolatrikona, or exalted sign, and when its consonant is not refused by the chakra.</p>
+       <ul class="checks">${lordBits}</ul>
+       ${yog}
+       ${refused ? `<ul class="checks">${refused}</ul>` : ""}`
+    );
+  }
+
+  if (rec.primary?.assessed) {
+    const a = rec.primary.assessed;
+    const joined = a.form.kind === "vowel"
+      ? `A vowel is kept with a bindu, so ${esc(a.letter)} becomes ${esc(a.form.text)}.`
+      : `The consonant is then joined to रीं. र belongs to Agni and ईं is kāmakalā, so ${esc(a.letter)} becomes ${esc(a.form.text)}.`;
+    if (rec.primary.chartPick) {
+      const g = rec.primary.chartPick.graha;
+      push(
+        "The graha’s own seed is kept",
+        `<p>${esc(g.name)} passed, and ${esc(g.consonant)} survives the chakra, so the seed is that graha’s beeja ${esc(g.beeja)}, not merely the third-square letter. ${joined} The chatushka count of this letter is ${esc(showYoga(a.mm.quartet))}–${esc(showYoga(a.mm.place))}.</p>`
+      );
+    } else if (rec.primary.bucket !== "fallback") {
+      push(
+        "The letter becomes a seed",
+        `<p>${esc(a.letter)} in house ${a.cell.n} is the letter kept. ${joined} Row ${a.rc.rowStep} is ${esc(showYoga(a.rc.row))}, column ${a.rc.colStep} is ${esc(showYoga(a.rc.col))}. Mantra Mahodadhi’s chatushka reads ${esc(showYoga(a.mm.quartet))}–${esc(showYoga(a.mm.place))}: ${esc(a.mm.fruit)}</p>`
+      );
+    }
+  } else if (rec.primary?.bucket === "fallback") {
+    push(
+      "The fallback seed",
+      `<p>No personal letter could be settled, so the working method uses श्रीं.</p>`
+    );
+  }
+
+  push(
+    "How to hold it",
+    `<p>Repeat the seed for a few days. If the mind is disturbed, stop, and take the next suitable seed or श्रीं. A guru is the one who gives it. Letters in a fourth row or column, and any ari result, are left unused. Those lists are on Beejas.</p>`
+  );
+  return items;
+}
+
+function paintFind() {
+  const rec = recNow();
+  const hero = $("hero");
+  const side = $("find-side");
+  const stepsBox = $("calc-steps");
+  if (!hero || !side) return;
+  if (!rec) {
+    hero.innerHTML = "";
+    if (stepsBox) stepsBox.innerHTML = "";
+    side.innerHTML = "";
+    return;
+  }
+  const steps = walkthrough(rec);
   hero.innerHTML = `<div class="card hero">
     <div class="hero-top">
       <div>
@@ -138,25 +296,40 @@ function paintFind() {
     <div class="actions">
       <button class="btn" data-act="copy" data-copy="${esc(rec.primary.text)}">Copy seed</button>
       <button class="btn secondary" data-act="copy" data-copy="ॐ ${esc(rec.primary.text)}">Copy ॐ ${esc(rec.primary.text)}</button>
-      <button class="btn-quiet" data-act="nav" data-view="chakra">Open the chakra</button>
+      <button class="btn-quiet" data-act="nav" data-view="chakra">See it on the chakra</button>
+      <button class="btn-quiet" data-act="nav" data-view="beejas">Best and not used</button>
     </div>
-    <ol class="steps">${steps.map((s, i) => `<li><span>${i + 1}</span><div>${esc(s).replace(/&lt;span class=&quot;dev&quot;&gt;|&lt;\/span&gt;/g, "")}</div></li>`).join("")}</ol>
     ${worship(rec)}
   </div>`;
-  // The step text was escaped, which is what we want; worship contains trusted markup built from our data.
-  const chips = thirdBest.map((a) => `<span class="chip"><span class="dev">${a.form.text}</span> · ${a.letter} · house ${a.cell.n}</span>`).join("");
-  const suit = (rec.groups?.suitable || []).slice(0, 6).map((a) => `<span class="chip"><span class="dev">${a.form.text}</span> · house ${a.cell.n}</span>`).join("");
-  side.innerHTML = `<h3>In the third square</h3><div class="suggest">${chips || "<p class='small'>The third square is refused by the other count. See Beejas.</p>"}</div>
-    <h3 style="margin-top:16px">Also suitable</h3><div class="suggest">${suit || "<p class='small muted'>None.</p>"}</div>
+  if (stepsBox) {
+    stepsBox.innerHTML = `<h2>How this beeja was counted</h2><ol class="steps">${steps.map((s, i) =>
+      `<li><span>${i + 1}</span><div><strong>${esc(s.title)}</strong>${s.html}</div></li>`
+    ).join("")}</ol>
+    <div class="actions">
+      <button class="btn-quiet" type="button" data-act="step" data-step="name">Change the name</button>
+      <button class="btn-quiet" type="button" data-act="step" data-step="birth">Change the birth</button>
+    </div>`;
+  }
+  const thirdLetters = rec.third ? rec.third.letters.map((L) => assess(rec.base, L)).filter((a) => a.bucket !== "avoid") : [];
+  const chips = thirdLetters.map((a) => `<span class="chip"><span class="dev">${esc(a.form.text)}</span> · ${esc(a.letter)} · house ${a.cell.n}</span>`).join("");
+  const suit = (rec.groups?.suitable || []).slice(0, 6).map((a) => `<span class="chip"><span class="dev">${esc(a.form.text)}</span> · house ${a.cell.n}</span>`).join("");
+  side.innerHTML = `<h3>Letters the third square still allows</h3><div class="suggest">${chips || "<p class='small'>None of that square survived both counts.</p>"}</div>
+    <h3 style="margin-top:16px">Other suitable seeds</h3><div class="suggest">${suit || "<p class='small muted'>None.</p>"}</div>
     <p class="small muted" style="margin-top:12px">${chartChip()}</p>`;
 }
 
 function chartChip() {
-  if (!state.chart) return `No birth chart yet. The beeja above uses the letter alone. <button class="btn-quiet" data-act="nav" data-view="chart">Add a chart</button>`;
+  if (!state.chart) {
+    return `Birth was skipped, so this seed comes from the letter alone. <button class="btn-quiet" type="button" data-act="step" data-step="birth">Add birth details</button>`;
+  }
   const c = state.chart;
   const moon = c.bodies.find((b) => b.id === "chandra");
   const nak = NAKSHATRAS[moon.nakshatraIndex];
-  return `Chart loaded. Lagna ${c.lagna.sign}. Moon ${nak.name} pada ${moon.pada}. Ayanamsha JN Bhasin ${dms(c.ayanamsha.degrees)}.`;
+  const pada = padaOf(moon.nakshatraIndex, moon.pada);
+  const alt = state.source === "nakshatra"
+    ? (state.base ? `<button class="btn-quiet" type="button" data-act="use-name">Use the name letter ${esc(state.base)} instead</button>` : "")
+    : `<button class="btn-quiet" type="button" data-act="use-janma">Use the Moon’s syllable ${esc(pada.pada.base)} instead</button>`;
+  return `Chart included. Lagna ${esc(c.lagna.sign)}. Moon ${esc(nak.name)} pada ${moon.pada}. Ayanamsha JN Bhasin ${dms(c.ayanamsha.degrees)}. <button class="btn-quiet" type="button" data-act="nav" data-view="chart">Open the chart</button> ${alt}`;
 }
 
 function cellTone(base, cell) {
@@ -284,7 +457,7 @@ function paintChart() {
   const out = $("chart-out");
   const c = state.chart;
   if (!c) {
-    out.innerHTML = "";
+    out.innerHTML = `<div class="card"><p>No birth chart yet. Enter the birth on Find, step 2, or skip that step and the beeja is taken from the name letter alone.</p><div class="actions"><button class="btn" type="button" data-act="go-birth">Enter birth details</button></div></div>`;
     return;
   }
   const moon = c.bodies.find((b) => b.id === "chandra");
@@ -443,25 +616,18 @@ async function calculate() {
       throw new Error(detail);
     }
     state.chart = data;
+    state.birthSkipped = false;
     if (!$("tz").value.trim()) $("tz").value = data.time.timezone;
     paintChart();
+    setView("find");
+    setStep("result");
   } catch (e) {
     err.hidden = false;
     err.textContent = e.message || "The chart could not be computed.";
   } finally {
     btn.disabled = false;
-    btn.textContent = "Calculate chart";
+    btn.textContent = "Find the beeja";
   }
-}
-
-function applyGuess() {
-  const guess = detectBase($("name").value);
-  const box = $("guess");
-  state.name = $("name").value;
-  if (!guess) { box.innerHTML = ""; return; }
-  const known = LETTERS[guess] || OUTSIDE.find((o) => o.dev === guess);
-  const label = known?.iast || guess;
-  box.innerHTML = `<button type="button" class="btn-quiet" data-act="pick" data-letter="${guess}">Use suggested ${guess} <span class="muted">(${esc(label)})</span></button>`;
 }
 
 function onClick(e) {
@@ -469,6 +635,24 @@ function onClick(e) {
   if (!btn) return;
   const act = btn.dataset.act;
   if (act === "nav") setView(btn.dataset.view);
+  if (act === "step") {
+    const next = btn.dataset.step;
+    if ((next === "birth" || next === "result") && !state.base && !(state.source === "nakshatra" && state.chart)) return;
+    setView("find");
+    setStep(next);
+  }
+  if (act === "skip-birth") {
+    state.chart = null;
+    state.birthSkipped = true;
+    state.source = "name";
+    paintChart();
+    setView("find");
+    setStep("result");
+  }
+  if (act === "go-birth") {
+    setView("find");
+    setStep(state.base ? "birth" : "name");
+  }
   if (act === "source") {
     state.source = btn.dataset.source;
     setPressed("source", "source", state.source);
@@ -480,10 +664,10 @@ function onClick(e) {
   if (act === "pick" || act === "adopt") {
     state.base = btn.dataset.letter;
     state.source = "name";
-    setPressed("source", "source", "name");
-    paintFind();
+    paintName();
     paintChakra();
     paintBeejas();
+    if (state.step === "result") paintFind();
   }
   if (act === "test") {
     state.test = btn.dataset.letter;
@@ -511,9 +695,9 @@ function onClick(e) {
     state.name = "Kumar";
     state.base = "क";
     state.source = "name";
-    setPressed("source", "source", "name");
     setView("find");
-    paintFind();
+    setStep("name");
+    paintName();
   }
   if (act === "preset" && btn.dataset.preset === "devadatta") {
     $("name").value = "Devadatta";
@@ -539,9 +723,15 @@ function onClick(e) {
   }
   if (act === "use-janma") {
     state.source = "nakshatra";
-    setPressed("source", "source", "nakshatra");
     setView("find");
-    paintFind();
+    setStep("result");
+    paintChakra();
+    paintBeejas();
+  }
+  if (act === "use-name") {
+    state.source = "name";
+    setView("find");
+    setStep("result");
     paintChakra();
     paintBeejas();
   }
@@ -561,7 +751,7 @@ function fillSample() {
 let placeTimer;
 function bind() {
   document.body.addEventListener("click", onClick);
-  $("name").addEventListener("input", applyGuess);
+  $("name").addEventListener("input", paintName);
   $("place").addEventListener("input", () => {
     clearTimeout(placeTimer);
     placeTimer = setTimeout(() => searchPlaces($("place").value), 280);
@@ -570,9 +760,9 @@ function bind() {
   $("sample").addEventListener("click", fillSample);
   $("unknown").addEventListener("change", () => { $("time").disabled = $("unknown").checked; });
   buildChakra();
-  paintPicker();
-  paintFind();
+  paintName();
   paintChakra();
+  setStep("name");
 }
 
 bind();
