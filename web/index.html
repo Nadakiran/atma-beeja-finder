@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Atma Beeja</title>
+  <meta name="description" content="Find an atma beeja from the sixteen-house Akathaha chakra and a JN Bhasin birth chart.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23f4f4f6'/%3E%3Crect x='4' y='4' width='10' height='10' rx='2' fill='%239a3412'/%3E%3Crect x='18' y='4' width='10' height='10' rx='2' fill='%231d1d1f'/%3E%3Crect x='4' y='18' width='10' height='10' rx='2' fill='%23166534'/%3E%3Crect x='18' y='18' width='10' height='10' rx='2' fill='%239f1239'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tiro+Devanagari+Sanskrit&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-dev">आत्मबीज</span>
+        <span class="brand-en">Atma Beeja</span>
+      </div>
+      <nav class="nav" aria-label="Sections">
+        <button data-act="nav" data-view="find" aria-current="page">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2"/></svg>
+          Find
+        </button>
+        <button data-act="nav" data-view="chart">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8"/><rect x="13" y="3" width="8" height="8"/><rect x="3" y="13" width="8" height="8"/><rect x="13" y="13" width="8" height="8"/></svg>
+          Chart
+        </button>
+        <button data-act="nav" data-view="chakra">
+          <svg viewBox="0 0 24 24"><path d="M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z"/></svg>
+          Chakra
+        </button>
+        <button data-act="nav" data-view="beejas">
+          <svg viewBox="0 0 24 24"><path d="M5 6h6v12H5zM13 6h6v12h-6z"/></svg>
+          Beejas
+        </button>
+        <button data-act="nav" data-view="learn">
+          <svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5A2.5 2.5 0 0 1 6.5 8H20"/></svg>
+          Learn
+        </button>
+      </nav>
+      <p class="side-note">A calculator for study. The beeja is traditionally received from a guru.</p>
+    </aside>
+    <main>
+      <section class="view wrap" id="view-find">
+        <p class="kicker">Akathaha · JN Bhasin</p>
+        <h1>Find the beeja</h1>
+        <p class="lede">The reference letter is the first letter of the name you are called by, or the Moon’s janma syllable. The sixteen houses then keep, delay, or refuse each seed.</p>
+        <div id="hero"></div>
+        <div class="grid-2">
+          <div class="card stack">
+            <div>
+              <div class="segment" role="tablist" aria-label="Reference letter">
+                <button data-act="source" data-source="name" aria-selected="true">Called name</button>
+                <button data-act="source" data-source="nakshatra" aria-selected="false">Janma letter</button>
+              </div>
+            </div>
+            <label class="field">Name you are called by
+              <input id="name" type="text" autocomplete="off" placeholder="Kumar, or कुमार" spellcheck="false">
+            </label>
+            <div id="guess"></div>
+            <div>
+              <div class="small muted">Tap the Sanskrit first letter. English spelling is only a suggestion.</div>
+              <div id="picker" class="picker"></div>
+              <div id="outside" class="outside-row"></div>
+            </div>
+            <div class="actions">
+              <button class="btn-quiet" data-act="preset" data-preset="kumar">Example: Kumar</button>
+              <button class="btn-quiet" data-act="preset" data-preset="devadatta">Example: Devadatta</button>
+            </div>
+          </div>
+          <div class="card" id="find-side"></div>
+        </div>
+      </section>
+
+      <section class="view wrap" id="view-chart" hidden>
+        <p class="kicker">Swiss Ephemeris · sidereal</p>
+        <h1>Birth chart</h1>
+        <p class="lede">Whole-sign houses, South Indian and North Indian figures, ayanamsha locked to JN Bhasin. The positions come from the Swiss Ephemeris, the astronomical library drik panchangas are built on.</p>
+        <div class="card stack" style="margin-bottom:16px">
+          <label class="field">Place
+            <input id="place" type="text" autocomplete="off" placeholder="Chennai, Madurai, London">
+          </label>
+          <div id="places" class="suggest"></div>
+          <div class="row-3">
+            <label class="field">Latitude
+              <input id="lat" type="number" step="0.0001" placeholder="13.0827">
+            </label>
+            <label class="field">Longitude
+              <input id="lon" type="number" step="0.0001" placeholder="80.2707">
+            </label>
+            <label class="field">Timezone
+              <input id="tz" type="text" placeholder="Asia/Kolkata">
+            </label>
+          </div>
+          <div class="row-2">
+            <label class="field">Date
+              <input id="date" type="date">
+            </label>
+            <label class="field">Time
+              <input id="time" type="time" value="12:00">
+            </label>
+          </div>
+          <label class="check"><input id="unknown" type="checkbox"> Birth time unknown. Noon is used, and the lagna is not allowed to choose the beeja.</label>
+          <div class="segment" role="group" aria-label="Lunar node">
+            <button data-act="node" data-node="mean" aria-selected="true">Mean node</button>
+            <button data-act="node" data-node="true" aria-selected="false">True node</button>
+          </div>
+          <div class="actions">
+            <button class="btn" id="calc" type="button">Calculate chart</button>
+            <button class="btn-quiet" id="sample" type="button">Fill a sample: Delhi, 15 Aug 1990, 10:30</button>
+          </div>
+          <p id="chart-error" class="warn" hidden></p>
+        </div>
+        <div id="chart-out"></div>
+      </section>
+
+      <section class="view wrap" id="view-chakra" hidden>
+        <p class="kicker">Sixteen houses</p>
+        <h1>Akathaha chakra</h1>
+        <p class="lede">House 1 reads <span class="dev">अ क थ ह</span>, which is why the figure is called akathaha. Your letter is outlined in gold. The third square is outlined in green. Tap any letter to test it as a mantra’s first letter.</p>
+        <div class="segment" role="group" aria-label="Colour by">
+          <button data-act="mode" data-mode="essay" aria-selected="true">Row and column</button>
+          <button data-act="mode" data-mode="tantra" aria-selected="false">Chatushka</button>
+        </div>
+        <div class="legend">
+          <span><i class="dot-best"></i>Best</span>
+          <span><i class="dot-suit"></i>Suitable</span>
+          <span><i class="dot-avoid"></i>Not used</span>
+          <span><i class="dot-mine"></i>Your letter</span>
+        </div>
+        <div id="chakra" class="chakra"></div>
+        <div id="chakra-detail" style="margin-top:16px"></div>
+      </section>
+
+      <section class="view wrap" id="view-beejas" hidden>
+        <p class="kicker">For the letter you chose</p>
+        <h1>Best, and not used</h1>
+        <p class="lede">Best means the third row and third column, or a susiddha–susiddha house the tantra does not forbid. Not used means a fourth row or column, an ari result, a fruitless chatushka, or <span class="dev">ऌ</span>.</p>
+        <div id="beeja-lists" class="stack"></div>
+      </section>
+
+      <section class="view wrap" id="view-learn" hidden>
+        <p class="kicker">How the count is made</p>
+        <h1>Learn the method</h1>
+        <article class="article">
+          <p>An atma beeja is a seed syllable kept with one’s own name and, when a chart is used, with a strong graha of that chart. It is not a general mantra picked from a list. The sixteen-house akathaha decides whether a letter may be worn by this person. A guru is the one who gives it. This page is the working method, with the passages it comes from.</p>
+          <ol class="toc">
+            <li><a href="#what">What the beeja is</a></li>
+            <li><a href="#books">The books</a></li>
+            <li><a href="#letter">Letter and seed</a></li>
+            <li><a href="#name">Which name</a></li>
+            <li><a href="#draw">Drawing the houses</a></li>
+            <li><a href="#figure">The figure</a></li>
+            <li><a href="#chatushka">Chatushka count</a></li>
+            <li><a href="#rows">Row and column</a></li>
+            <li><a href="#sixteen">Sixteen results</a></li>
+            <li><a href="#join">Making the seed</a></li>
+            <li><a href="#chart-rule">The birth chart</a></li>
+            <li><a href="#janma">Janma letter</a></li>
+            <li><a href="#deities">Deities</a></li>
+            <li><a href="#ayan">Ayanamsha</a></li>
+            <li><a href="#read">Reading the chart</a></li>
+            <li><a href="#use">Using it</a></li>
+            <li><a href="#limits">Limits</a></li>
+          </ol>
+
+          <h2 id="what">What the beeja is</h2>
+          <p>A letter, an akshara, is a sound. A beeja is a seed built from more than one sound, usually with a bindu. <span class="dev">क</span> is a letter. <span class="dev">क्रीं</span> is a seed. Several seeds make a mantra. The atma beeja is one seed placed with the person, often before and after another mantra. That enclosing is sampuṭa. The point of a personal seed is that each new mantra does not have to be tested from scratch against the name: the seed has already been chosen for this name and this chart.</p>
+
+          <h2 id="books">The books</h2>
+          <p>Two tantras give the chakra and the count.</p>
+          <p><strong>Rudrayamala, patala 5.</strong> The chapter builds the maha-akathaha for the preparation of a mantra. Verses 2–3 say to draw a four-sided figure and divide it until there are sixteen houses. Verses 4–5 say to write the alphabet, from <span class="dev">अ</span> onward, through those houses in pradakshina order and then count. Verses 6–8 give the houses in code. The traditional unpacking of that code is the order 1, 3, 11, 9, 2, 4, 12, 10, 6, 8, 16, 14, 5, 7, 15, 13. Counting then runs from the first letter of the name to the first letter of the mantra. Verses 9–16 name the four steps siddha, sādhya, susiddha, and ari, and give the fruit of each pair.</p>
+          <p><strong>Mantra Mahodadhi, taranga 24,</strong> of Mahidhara. Verses 1–2 say to purify a mantra from the first letter of the sādhaka’s name up to the first letter of the mantra, and that either the janma-nakshatra name or the name one is known by may be used. Verses 3–5 draw the same sixteen houses and fill them in the same order. Verses 6–12 explain the four groups of four. Verses 13–16 give the fruits. The commentary’s worked example puts <span class="dev">द</span> in house 3 and <span class="dev">ऐ</span> in house 14, and calls the meeting susiddha–ari. The figure in this app is that figure: its third house contains <span class="dev">द</span>, and its fourteenth contains <span class="dev">ऐ</span>.</p>
+          <p>The birth-chart refinement — start from the lagna lord’s bījākṣara when that lord is strong, otherwise from a pūrṇa yogakāraka, otherwise from a vowel or from <span class="dev">क ब भ म र व श स ह</span>, avoid the fourth, prefer the third, join <span class="dev">रीं</span>, and fall back to <span class="dev">श्रीं</span> — is a later working method taught on this same chakra. It is not a sūtra of Parashara. The app labels that layer as a working method, and it labels the chatushka layer as the tantra.</p>
+          <p>Varga deities follow the alphabet scheme of the Sharada Tilaka. Nakshatra deities follow Varahamihira, Brihat Samhita 98. Pada syllables follow the namakarana set of the Avakahada tradition, the set drik panchangas print. Vimshottari lords follow the usual order counted in Brihat Parashara Hora Shastra.</p>
+
+          <h2 id="letter">Letter and seed</h2>
+          <p>Take only the base. In <span class="dev">कुमार</span> the first syllable is <span class="dev">कु</span>, which is <span class="dev">क</span> plus the vowel <span class="dev">उ</span>. The letter that enters the chakra is <span class="dev">क</span>. A pure vowel stays a vowel: Indira begins with <span class="dev">इ</span>.</p>
+          <p>The chart in use holds 49 letters. Sixteen houses, three letters each, would be 48; house 1 holds four, <span class="dev">अ क थ ह</span>, and the total is 49. <span class="dev">ळ</span>, <span class="dev">क्ष</span>, and <span class="dev">ज्ञ</span> have no house here. The Rudrayamala says the alphabet runs through <span class="dev">क्ष</span>. This working figure stops before those three. If a name begins with one of them, there is nothing to count, and the working method uses <span class="dev">श्रीं</span>.</p>
+
+          <h2 id="name">Which name</h2>
+          <p>Mantra Mahodadhi 24.2 allows two names. One is the name drawn from the janma nakshatra. The other is the name by which the person is actually known. Ashish Kumar, if everyone says Kumar, is entered as Kumar, not as Ashish. The app asks you to confirm the Sanskrit letter, because an English spelling does not decide between <span class="dev">त</span> and <span class="dev">ट</span>, or between <span class="dev">श</span> and <span class="dev">ष</span>.</p>
+
+          <h2 id="draw">Drawing the houses</h2>
+          <p>Five lines down and five lines across make sixteen rooms. Number them left to right, top to bottom, 1 to 16. That numbering is the one in the commentary: house 3, house 14. Separately, the letters were appointed to those rooms in the fill order</p>
+          <p>1 · 3 · 11 · 9 · 2 · 4 · 12 · 10 · 6 · 8 · 16 · 14 · 5 · 7 · 15 · 13.</p>
+          <p>Read as four groups, the quartets are:</p>
+          <ol>
+            <li>Houses 1, 3, 11, 9</li>
+            <li>Houses 2, 4, 12, 10</li>
+            <li>Houses 6, 8, 16, 14</li>
+            <li>Houses 5, 7, 15, 13</li>
+          </ol>
+          <p>The quartet that contains the name becomes the siddha quartet. The next quartet in this cycle is sādhya, the next susiddha, the last ari. Inside the quartet where the mantra letter sits, the first house of that quartet, in the order written above, is siddha, the second sādhya, the third susiddha, the fourth ari. The two words together are the result: susiddha–ari, siddha–siddha, and the other fourteen.</p>
+
+          <h2 id="figure">The figure</h2>
+          <div class="figure" aria-label="Akathaha houses">
+            <div><small>1</small>अ क थ ह</div>
+            <div><small>2</small>उ ङ प</div>
+            <div><small>3</small>आ ख द</div>
+            <div><small>4</small>ऊ च फ</div>
+            <div><small>5</small>ओ ड व</div>
+            <div><small>6</small>ऌ झ म</div>
+            <div><small>7</small>औ ढ श</div>
+            <div><small>8</small>ॡ ञ य</div>
+            <div><small>9</small>ई घ न</div>
+            <div><small>10</small>ॠ ज भ</div>
+            <div><small>11</small>इ ग ध</div>
+            <div><small>12</small>ऋ छ ब</div>
+            <div><small>13</small>अः त स</div>
+            <div><small>14</small>ऐ ठ ल</div>
+            <div><small>15</small>अं ण ष</div>
+            <div><small>16</small>ए ट र</div>
+          </div>
+          <p>Every letter in one house shares one result. You do not count from letter to letter inside the house. You count from house to house.</p>
+
+          <h2 id="chatushka">Chatushka count</h2>
+          <div class="example">
+            <strong>Devadatta, testing a mantra that begins with <span class="dev">ऐ</span>.</strong>
+            <p>The name begins with <span class="dev">द</span>, which is in house 3. House 3 is the second room of the first quartet (1, 3, 11, 9), so that whole quartet is siddha for him. <span class="dev">ऐ</span> is in house 14. House 14 is the last room of the third quartet (6, 8, 16, 14). The third quartet is susiddha. The last room of a quartet is ari. The commentary calls this susiddha–ari and says to leave it. The app reproduces that result.</p>
+          </div>
+
+          <h2 id="rows">Row and column</h2>
+          <p>The atma-bija working method also counts in straight rows and columns, wrapping around the square as if it continued. The name’s own row is the first, called siddha. The next row down is sādhya. The third is susiddha. The fourth is ari. Columns move to the right in the same way. The rule used for choosing an atma beeja is short: the third row and the third column is the best square; the second and second is also spoken of as highly suitable; the fourth row or the fourth column is not used.</p>
+          <p>These four words are the same words as in the tantra, but they are not the same measurement. “Second row and second column” is not automatically the tantra’s “sādhya–sādhya”. The app shows both counts and does not collapse them into one.</p>
+          <div class="example">
+            <strong>Kumar, letter <span class="dev">क</span>, house 1.</strong>
+            <p><span class="dev">र</span> is in house 16. That is the fourth row and the fourth column. Both counts that the essay uses are ari, so a seed built on <span class="dev">र</span> is refused for this name.</p>
+            <p><span class="dev">म</span> is in house 6. That is the second row and the second column. The essay treats the three letters of that house as suitable, then drops <span class="dev">ऌ</span> as inauspicious for an atma beeja, and keeps <span class="dev">म</span> rather than <span class="dev">झ</span>. It builds <span class="dev">म्रीं</span>. On the tantra’s own count, the same <span class="dev">म</span> is susiddha–siddha, which fructifies with half the japa. So the famous example is allowed by both counts. It is not, however, the third square.</p>
+            <p>The third square from house 1 is house 11, <span class="dev">इ ग ध</span>. Among those, <span class="dev">ग</span> is the opening of Guru’s seed, so the systematic beeja of the third square is <span class="dev">ग्रीं</span>. A published teacher chose the second square by hand. This app always shows the third square first, and keeps <span class="dev">म्रीं</span> in the suitable list, where that example can still be found.</p>
+          </div>
+          <p>A name that starts in the middle of the grid wraps. For <span class="dev">स</span> in house 13, two rows down and two columns across lands on house 7, <span class="dev">औ ढ श</span>. That is the same step Sanjay Rath’s note on this chakra uses when it calls the third square the best one.</p>
+
+          <h2 id="sixteen">Sixteen results</h2>
+          <p>Mantra Mahodadhi 24.13–16, in the sense used here:</p>
+          <ul>
+            <li>Siddha–siddha: in the time already set for that mantra.</li>
+            <li>Siddha–sādhya: twice the japa.</li>
+            <li>Siddha–susiddha: half the japa.</li>
+            <li>Siddha–ari: not used. The text says it harms kinsmen.</li>
+            <li>Sādhya–siddha: twice the japa.</li>
+            <li>Sādhya–sādhya: fruitless. Not used.</li>
+            <li>Sādhya–susiddha: twice the japa.</li>
+            <li>Sādhya–ari: not used. The text says it harms the gotra.</li>
+            <li>Susiddha–siddha: half the japa.</li>
+            <li>Susiddha–sādhya: twice the japa.</li>
+            <li>Susiddha–susiddha: from the initiation itself.</li>
+            <li>Susiddha–ari: not used. The text says it harms the family.</li>
+            <li>Ari–siddha: not used. The text says it harms sons.</li>
+            <li>Ari–sādhya: not used. The text says it harms daughters.</li>
+            <li>Ari–susiddha: not used. The text says it harms the spouse.</li>
+            <li>Ari–ari: not used. The text says it harms the practitioner.</li>
+          </ul>
+          <p>The Rudrayamala’s wording of a few pairs is a little harsher or a little softer than Mahidhara’s. Where they differ, this app follows Mantra Mahodadhi, and it follows the atma-bija rule that a fourth row or fourth column is refused even if the other count sounds kind. The texts are telling a practitioner not to take those combinations. They are not instructions for harming anyone. An ari mantra already received is, in those books, to be set down with a guru’s rite. This app does not teach that rite. It only refuses the letter.</p>
+
+          <h2 id="join">Making the seed</h2>
+          <p>A bare letter is not yet a beeja. The working method joins the chosen consonant to <span class="dev">रीं</span>. The reason given there is that <span class="dev">र</span> belongs to Agni and <span class="dev">ईं</span> is kāmakalā. So <span class="dev">म</span> becomes <span class="dev">म्रीं</span>, <span class="dev">ग</span> becomes <span class="dev">ग्रीं</span>, <span class="dev">श</span> becomes <span class="dev">श्रीं</span>. When the letter under test is <span class="dev">र</span> itself, the seed is <span class="dev">रीं</span> and is not written twice.</p>
+          <p>A vowel can take a bindu — <span class="dev">इ</span> becomes <span class="dev">इं</span> — but the essays want a real seed, not only a letter with a dot. If the winning house contains a consonant, the consonant is used. <span class="dev">ऌ</span> is never used, even in a good house. The published note on <span class="dev">ऌ</span> is simply that it is not auspicious for this purpose.</p>
+          <p>If every acceptable house fails, the same essays say to use <span class="dev">श्रीं</span>. They call it a fruition seed. It is also the ordinary joining of <span class="dev">श</span> with <span class="dev">रीं</span>, so when <span class="dev">श</span> itself wins a good house the beeja is <span class="dev">श्रीं</span> for a structural reason, not only as a fallback.</p>
+
+          <h2 id="chart-rule">The birth chart</h2>
+          <p>The working method says the letter can be taken from the horoscope, then still has to pass the chakra.</p>
+          <ol>
+            <li>If the lagna lord is strong — the essays mention high shadbala, a good house, no combustion, no debilitation — use that graha’s bījākṣara, provided the chakra does not refuse it.</li>
+            <li>If the lagna lord fails, and the lagna is one that has a single yogakaraka, use that graha the same way. The six lagnas are Taurus (Shani), Cancer (Mangala), Leo (Mangala), Libra (Shani), Capricorn (Shukra), and Aquarius (Shukra). Each of those grahas owns both a kendra and a trikona.</li>
+            <li>Otherwise choose from the good letters in the third square, then from the other houses the chakra still allows.</li>
+          </ol>
+          <p>The nine graha seeds used here are the usual navagraha bījas:</p>
+          <ul>
+            <li>Surya <span class="dev">ह्रां</span> — <span class="dev">ॐ ह्रां ह्रीं ह्रौं सः सूर्याय नमः</span></li>
+            <li>Chandra <span class="dev">श्रां</span> — <span class="dev">ॐ श्रां श्रीं श्रौं सः चन्द्राय नमः</span></li>
+            <li>Mangala <span class="dev">क्रां</span> — <span class="dev">ॐ क्रां क्रीं क्रौं सः भौमाय नमः</span></li>
+            <li>Budha <span class="dev">ब्रां</span> — <span class="dev">ॐ ब्रां ब्रीं ब्रौं सः बुधाय नमः</span></li>
+            <li>Guru <span class="dev">ग्रां</span> — <span class="dev">ॐ ग्रां ग्रीं ग्रौं सः गुरवे नमः</span></li>
+            <li>Shukra <span class="dev">द्रां</span> — <span class="dev">ॐ द्रां द्रीं द्रौं सः शुक्राय नमः</span></li>
+            <li>Shani <span class="dev">प्रां</span> — <span class="dev">ॐ प्रां प्रीं प्रौं सः शनैश्चराय नमः</span></li>
+            <li>Rahu <span class="dev">भ्रां</span> — <span class="dev">ॐ भ्रां भ्रीं भ्रौं सः राहवे नमः</span></li>
+            <li>Ketu <span class="dev">स्रां</span> — <span class="dev">ॐ स्रां स्रीं स्रौं सः केतवे नमः</span></li>
+          </ul>
+          <p>When the chart’s graha survives the chakra, the primary seed is that graha’s own beeja, and the joining with <span class="dev">रीं</span> is shown beside it. When the graha’s letter falls in ari, it is dropped even if the planet is strong. That is the Kumar case, moved from a hand-chosen <span class="dev">र</span> onto the chart: a strong Mars still cannot donate <span class="dev">क</span> if <span class="dev">क</span> sits on the fourth.</p>
+          <p>The strength screen in this app is narrower than shadbala. A graha passes when it is not debilitated, not combust, and stands in a kendra (1, 4, 7, 10), a trikona (1, 5, 9), its own sign, moolatrikona, or exaltation. Combustion orbs used are Moon 12°, Mars 17°, Mercury 14° (12° if retrograde), Jupiter 11°, Venus 10° (8° if retrograde), Saturn 15°. Neecha-bhanga is not applied. A natural malefic is not failed merely for being a malefic, because Shani is the yogakaraka of Taurus and Libra. If you need shadbala, this screen is not it.</p>
+
+          <h2 id="janma">Janma letter</h2>
+          <p>Each nakshatra is 13°20′, and each of its four padas is 3°20′. The Moon’s pada at birth supplies a syllable. The base of that syllable is a lawful reference letter under Mantra Mahodadhi 24.2. Ashvini 1 is <span class="dev">चू</span>, so the base is <span class="dev">च</span>. Krittika 1 is the vowel <span class="dev">अ</span>. Pushya 4 is <span class="dev">डा</span>, retroflex <span class="dev">ड</span>, not dental <span class="dev">द</span>.</p>
+          <p>Shravana is taken here as <span class="dev">खी खू खे खो</span>, which is the set printed with drik panchangas. Some books use <span class="dev">जु जे जो घ</span>. If your family panchanga uses the other set, choose that letter by hand.</p>
+          <p>Without a birth time the pada can be wrong, because the Moon moves about one nakshatra a day. The app will still compute a noon chart if you say the time is unknown, and it will not let that lagna choose the beeja.</p>
+
+          <h2 id="deities">Deities</h2>
+          <p>The Sharada scheme used here, as set out in the alphabet tradition of that tantra:</p>
+          <ul>
+            <li>All vowels: graha Surya, devata Sadashiva.</li>
+            <li>Ka-varga <span class="dev">क ख ग घ ङ</span>: Mangala and Brahma. Ca-varga <span class="dev">च छ ज झ ञ</span>: Shukra and Brahma.</li>
+            <li>Retroflex ta <span class="dev">ट ठ ड ढ ण</span>: Budha and Vishnu. Dental ta <span class="dev">त थ द ध न</span>: Guru and Vishnu.</li>
+            <li>Pa-varga <span class="dev">प फ ब भ म</span>: Shani and Shiva. Ya-varga, taken here as <span class="dev">य र व श</span>: Chandra and Shiva.</li>
+            <li>Sha group <span class="dev">ष स ह ल</span>: Chandra and Rudra. One tabulation places visarga with the lunar semivowels; this app keeps <span class="dev">अः</span> with the vowels and says so on that letter.</li>
+          </ul>
+          <p>Several letters also carry a shakti-name from that alphabet gloss: <span class="dev">क</span> Srishti, <span class="dev">ख</span> Vriddhi, <span class="dev">ग</span> Smriti, <span class="dev">घ</span> Medha, <span class="dev">ङ</span> Kanti, <span class="dev">च</span> Lakshmi, <span class="dev">छ</span> Dhriti, <span class="dev">ज</span> Sthira, <span class="dev">झ</span> Sthiti, <span class="dev">ञ</span> Siddhi, and so on through the vowels. Pa, pha, ba, bha, ma, ya, ra, and va are not given an extra shakti-name here, because the gloss list that supplied the others does not state one cleanly. Inventing one would be worse than leaving the varga deity.</p>
+          <p>Worship follows the letter you actually received. If the chart gives Mangala and <span class="dev">क</span> survives, the worship is Mangala’s seed and mantra, and Brahma remains the varga devata of <span class="dev">क</span>. If the chakra alone gives <span class="dev">म्रीं</span>, the varga devata is Shiva and the varga graha is Shani. If the reference letter was the janma syllable, the nakshatra deity is named as well. None of this replaces the devata of a mantra your guru has already given.</p>
+
+          <h2 id="ayan">Ayanamsha</h2>
+          <p>The chart is sidereal. The ayanamsha is JN Bhasin, Swiss Ephemeris mode <code>SE_SIDM_JN_BHASIN</code> (number 8). Lahiri is calculated beside it so you can see the gap, which is a little over a degree through the twentieth and twenty-first centuries. The houses and the nakshatra are drawn from JN Bhasin only. Drik Panchang’s own public charts are Lahiri. “Drik” here means the astronomical ephemeris, not a copy of that website and not Lahiri.</p>
+          <p>Positions use the Swiss Ephemeris Moshier theory, which travels inside the library and needs no extra ephemeris files. It is more than tight enough to decide a sign and a pada. Between the years 1800 and 2200 it is at its best. Outside that, the app warns you. Rahu defaults to the mean node. Ketu is the opposite point. Whole-sign houses: the sign of the ascendant is house 1 in full, the next sign is house 2, and so on.</p>
+
+          <h2 id="read">Reading the chart</h2>
+          <p>The South Indian figure keeps the signs still. Pisces, Aries, Taurus, and Gemini stand on the top row; Aquarius and Cancer on the next; Capricorn and Leo under them; Sagittarius, Scorpio, Libra, and Virgo along the bottom. Planets move into the sign they occupy. The lagna sign is marked. The house number is how far that sign is from the lagna, counting the lagna as 1.</p>
+          <p>The North Indian figure keeps the houses still. House 1 is the top diamond, and the signs move. Both figures are the same chart. A retrograde planet is marked in copper and with R. The table under the figures gives degree, nakshatra, pada, dignity, and combustion.</p>
+          <p>The opening Vimshottari mahadasha is the lord of the Moon’s nakshatra. The balance is the unwalked part of that nakshatra, times the lord’s years. It is the balance at birth, not a full 120-year table.</p>
+
+          <h2 id="use">Using it</h2>
+          <p>The essays say the guru gives the seed, and the student repeats it for a few days as a trial. A quiet, bright mind is taken as a sign that the human count was not mistaken. Disturbance is a sign to stop and to choose the next lawful seed, or <span class="dev">श्रीं</span>. Once it sits well, it is placed before a mantra, or before and after it. Advanced practice is sometimes the seed alone, laid on the breath. Those are instructions for someone already inside a practice. They are not a claim that a website has initiated you.</p>
+          <p>The shape of sampuṭa is: seed, then the mantra, then the seed. The app shows that shape with the words “your mantra” left blank on purpose.</p>
+
+          <h2 id="limits">Limits</h2>
+          <ul>
+            <li>It does not give diksha, and it does not replace a guru.</li>
+            <li>It does not compute shadbala, ashtakavarga, or neecha-bhanga.</li>
+            <li>It uses one akathaha and two published ways of reading it. Other paddhatis exist. The books themselves say there is more than one method.</li>
+            <li>English-to-Sanskrit is a hint. The letter you tap is the letter that is counted.</li>
+            <li>The harmful fruits in the ari lines are reported because they are in Mantra Mahodadhi. They are reasons to leave the letter, not a practice.</li>
+          </ul>
+          <p>Primary texts named above: Rudrayamala patala 5; Mahidhara, Mantra Mahodadhi taranga 24; Lakshmana Deshika, Sharada Tilaka, for the varga deities; Varahamihira, Brihat Samhita 98; the Avakahada namakarana syllables; Brihat Parashara Hora Shastra for the dasha lords; Swiss Ephemeris for the astronomical positions.</p>
+        </article>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
