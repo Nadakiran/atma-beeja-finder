@@ -297,7 +297,7 @@ function walkthrough(rec) {
     const refused = asLines((rec.rejected || []).map((r) => r.reason));
     push(
       "The lagna lord is asked first",
-      `<p>Lagna is ${esc(c.lagna.sign)}. Its lord is tested before any letter in the third square. A lord is kept only when it is not debilitated, not combust, and stands in a kendra, a trikona, or its own, moolatrikona, or exalted sign, and when its consonant is not refused by the chakra.</p>
+      `<p>Lagna is ${esc(c.lagna.sign)}. Its lord is tested before any letter in the third square. A lord is kept only when its shadbala reaches the required pinda, it is not debilitated, not combust, and it stands in a kendra, a trikona, or its own, moolatrikona, or exalted sign, and when its consonant is not refused by the chakra.</p>
        ${lordBits}
        ${yog}
        ${refused}`
@@ -608,12 +608,57 @@ function paintChart() {
       <h3 style="margin-top:12px">${yog ? `Yogakaraka · ${esc(yog.name)} · ${yog.fit ? "passed the screen" : "did not pass"}` : "No single yogakaraka"}</h3>
       <p class="small">${esc(c.yogakarakaNote)}</p>
       ${yog ? `<ul class="checks">${yog.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>` : ""}
+      ${shadbalaCard(c)}
       <h3 style="margin-top:12px">Vimshottari at birth</h3>
       <p class="small">${esc(c.dasha.name)} mahadasha, about ${c.dasha.years} years ${c.dasha.months} months ${c.dasha.days} days left, ending near ${esc(c.dasha.ends)}. This is the opening balance only.</p>
       <div class="actions">
         <button class="btn secondary" data-act="use-janma">Use the janma letter ${esc(pada.base)} for the beeja</button>
       </div>
     </div>`;
+}
+
+function shadbalaCard(c) {
+  const s = c.shadbala;
+  if (!s) return "";
+  const n = (v) => Number(v).toFixed(1);
+  const rows = s.order.map((id) => {
+    const p = s.planets[id];
+    return `<tr>
+      <td>${esc(p.name)}</td>
+      <td>${n(p.sthana.total)}</td>
+      <td>${n(p.dig)}</td>
+      <td>${n(p.kala.total)}</td>
+      <td>${n(p.cheshta)}</td>
+      <td>${n(p.naisargika)}</td>
+      <td>${n(p.drik)}</td>
+      <td>${n(p.virupas)}</td>
+      <td>${n(p.required)}</td>
+      <td>${p.meets ? "Meets it" : "Short"}</td>
+    </tr>`;
+  }).join("");
+  const parts = s.order.map((id) => {
+    const p = s.planets[id];
+    const vargas = p.sthana.vargas.map((v) => `${v.varga} ${v.sign} ${v.points} (${v.because})`).join("; ");
+    const k = p.kala;
+    const yuddha = k.yuddhaNote ? ` ${k.yuddhaNote}.` : "";
+    return `<details>
+      <summary>${esc(p.name)} · ${n(p.virupas)} virupas · ${p.meets ? "meets" : "short of"} ${n(p.required)}</summary>
+      <p class="parts">Sthana ${n(p.sthana.total)}: uchcha ${n(p.sthana.uchcha)}, saptavargaja ${n(p.sthana.saptavargaja)}, odd/even ${n(p.sthana.ojhayugma)}, kendra ${n(p.sthana.kendradi)}, drekkana ${n(p.sthana.drekkana)}. ${esc(vargas)}.</p>
+      <p class="parts">Dig ${n(p.dig)}. Kala ${n(k.total)}: natonnata ${n(k.natonnata)}, paksha ${n(k.paksha)}, tribhaga ${n(k.tribhaga)}, year ${n(k.abda)}, month ${n(k.masa)}, weekday ${n(k.vara)}, hour ${n(k.hora)}, ayana ${n(k.ayana)}, war ${n(k.yuddha)}.${esc(yuddha)} Cheshta ${n(p.cheshta)}. Naisargika ${n(p.naisargika)}. Drik ${n(p.drik)}.</p>
+    </details>`;
+  }).join("");
+  const L = s.lords;
+  return `<div class="shadbala">
+    <h3>Shadbala</h3>
+    <p class="small muted">Six strengths in virupas. 60 virupas make 1 rupa. A graha meets the chapter’s requirement when the total reaches its pinda. The beeja still also asks for a sound house, no combustion, and no debilitation.</p>
+    <p class="small">Sunrise ${esc(L.sunrise || "—")}, sunset ${esc(L.sunset || "—")}. Weekday lord ${esc(L.vara)}. Hour lord ${esc(L.hora)}. Month lord ${esc(L.masa)}, from the Sun’s entry into its present sign. Year lord ${esc(L.abda)}, from the Sun’s entry into Mesha. This third of the ${L.day ? "day" : "night"} belongs to ${esc(L.tribhaga)}. Guru receives that strength at every hour.</p>
+    ${s.caution ? `<p class="warn">${esc(s.caution)}</p>` : ""}
+    <div class="table-wrap"><table class="bala">
+      <thead><tr><th>Graha</th><th>Sthana</th><th>Dig</th><th>Kala</th><th>Cheshta</th><th>Naisargika</th><th>Drik</th><th>Total</th><th>Required</th><th>Result</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    ${parts}
+  </div>`;
 }
 
 function lagnaRow(c) {

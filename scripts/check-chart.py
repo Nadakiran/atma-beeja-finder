@@ -6,5 +6,13 @@ assert c["bodies"][0]["sign"] == "Karka", c["bodies"][0]
 assert c["ayanamsha"]["system"] == "JN Bhasin"
 assert c["ayanamsha"]["swissId"] == 8
 assert c["lagnaLord"]["id"] == "budha"
-assert "fit" in c["lagnaLord"]
-print("chart ok", c["lagna"]["sign"], c["bodies"][0]["sign"], round(c["ayanamsha"]["degrees"], 3), c["lagnaLord"])
+assert c["lagnaLord"]["fit"] is False
+assert c["shadbala"]["planets"]["budha"]["meets"] is True
+print(
+    "chart ok",
+    c["lagna"]["sign"],
+    c["bodies"][0]["sign"],
+    round(c["ayanamsha"]["degrees"], 3),
+    c["lagnaLord"]["id"],
+    c["shadbala"]["planets"]["budha"]["virupas"],
+)

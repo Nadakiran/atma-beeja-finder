@@ -16,6 +16,8 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import swisseph as swe
 import tzfpy
 
+from server.shadbala import compute as compute_shadbala
+
 _LOCK = threading.Lock()
 
 SIGNS = [
@@ -196,11 +198,12 @@ def _combust(pid: str, lon: float, sun: float, retro: bool) -> bool:
     return _ang(lon, sun) <= orbs[pid]
 
 
-def _screen(pid: str, body: dict) -> dict:
-    """Dignity and house screen standing in for the essays' 'strong lagna lord'.
+def _screen(pid: str, body: dict, shadbala: dict | None, time_unknown: bool) -> dict:
+    """The lagna lord is kept only when the essays' strength marks all hold.
 
-    Full shadbala is not computed. A planet passes when it is not debilitated,
-    not combust, and is in a kendra, a trikona, its own sign, moolatrikona, or exaltation.
+    Those marks are: shadbala at or above the required pinda, a kendra or
+    trikona or own / moolatrikona / exaltation, no combustion, and no
+    debilitation. Neecha-bhanga is not applied.
     """
     house = body["house"]
     dignity = body["dignity"]
@@ -210,7 +213,8 @@ def _screen(pid: str, body: dict) -> dict:
     debilitated = dignity == "Debilitated"
     combust = body["combust"]
     placed = kendra or trikona or strong_sign
-    fit = (not debilitated) and (not combust) and placed
+    meets = bool(shadbala and shadbala["meets"])
+    fit = (not debilitated) and (not combust) and placed and meets and not time_unknown
     reasons = []
     if debilitated:
         reasons.append(f"{NAMES[pid]} is debilitated.")
@@ -239,11 +243,23 @@ def _screen(pid: str, body: dict) -> dict:
         reasons.append(f"{NAMES[pid]} is in house {house}, neither a kendra nor a trikona.")
     if not placed and not debilitated:
         reasons.append("House and sign together are not strong enough for this screen.")
-    reasons.append(
-        "This is not a shadbala result. Neecha-bhanga is not applied."
-        if not fit
-        else "Passed the dignity and house screen. Shadbala is not computed."
-    )
+    if shadbala:
+        gap = shadbala["required"] - shadbala["virupas"]
+        verdict = "This meets the required shadbala." if meets else f"This is short by {gap:.1f} virupas."
+        reasons.append(
+            f"{NAMES[pid]} has {shadbala['virupas']:.1f} virupas of shadbala "
+            f"({shadbala['rupas']:.2f} rupas). "
+            f"Sthana {shadbala['sthana']['total']:.1f}, dig {shadbala['dig']:.1f}, "
+            f"kala {shadbala['kala']['total']:.1f}, cheshta {shadbala['cheshta']:.1f}, "
+            f"naisargika {shadbala['naisargika']:.1f}, drik {shadbala['drik']:.1f}. "
+            f"The required pinda is {shadbala['required']:.0f} virupas. {verdict}"
+        )
+    if time_unknown:
+        reasons.append("The birth time is unknown, so this graha is not allowed to choose the beeja.")
+    elif fit:
+        reasons.append("Passed shadbala, house, combustion, and debilitation. Neecha-bhanga is not applied.")
+    else:
+        reasons.append("Neecha-bhanga is not applied.")
     return {
         "id": pid,
         "name": NAMES[pid],
@@ -254,6 +270,15 @@ def _screen(pid: str, body: dict) -> dict:
             "kendra": kendra,
             "trikona": trikona,
             "ownOrExalted": strong_sign,
+            "shadbala": meets,
+        },
+        "shadbala": None
+        if shadbala is None
+        else {
+            "virupas": shadbala["virupas"],
+            "rupas": shadbala["rupas"],
+            "required": shadbala["required"],
+            "meets": meets,
         },
         "reasons": reasons,
     }
@@ -349,6 +374,7 @@ def compute_chart(
         swe.set_sid_mode(swe.SIDM_JN_BHASIN)
 
     lagna_lon = float(ascmc[0]) % 360.0
+    armc = float(ascmc[swe.ARMC])
     lagna_sign = int(lagna_lon // 30) % 12
     lagna = _place(lagna_lon, lagna_sign)
     lagna["house"] = 1
@@ -390,6 +416,18 @@ def compute_chart(
 
     lord_id = SIGN_LORD[lagna_sign]
     yog_id = YOGAKARAKA.get(lagna_sign)
+    shadbala = compute_shadbala(
+        jd,
+        latitude,
+        longitude,
+        lagna_lon,
+        ayan,
+        armc,
+        zone,
+        {pid: by_id[pid] for pid in ("surya", "chandra", "mangala", "budha", "guru", "shukra", "shani")},
+        _LOCK,
+        time_unknown,
+    )
 
     moon = by_id["chandra"]
     span = 360.0 / 27.0
@@ -434,8 +472,11 @@ def compute_chart(
         + ("true node" if node == "true" else "mean node"),
         "lagna": lagna,
         "bodies": bodies,
-        "lagnaLord": _screen(lord_id, by_id[lord_id]),
-        "yogakaraka": None if yog_id is None else _screen(yog_id, by_id[yog_id]),
+        "shadbala": shadbala,
+        "lagnaLord": _screen(lord_id, by_id[lord_id], shadbala["planets"][lord_id], time_unknown),
+        "yogakaraka": None
+        if yog_id is None
+        else _screen(yog_id, by_id[yog_id], shadbala["planets"][yog_id], time_unknown),
         "yogakarakaNote": (
             "This lagna is one of Taurus, Cancer, Leo, Libra, Capricorn, Aquarius, which have a single yogakaraka."
             if yog_id

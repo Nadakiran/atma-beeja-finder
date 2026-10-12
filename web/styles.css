@@ -301,6 +301,11 @@ th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line
 th { color: var(--sub); font-weight: 550; font-size: 12px; }
 .checks { margin: 8px 0 0; padding-left: 18px; }
 .checks li { margin: 4px 0; }
+.shadbala { margin-top: 18px; }
+.shadbala details { border-top: 1px solid var(--line); padding: 8px 0; }
+.shadbala summary { cursor: pointer; }
+.shadbala .parts { margin: 6px 0 0; color: var(--sub); font-size: 14px; line-height: 1.45; }
+table.bala { font-variant-numeric: tabular-nums; }
 
 .article { max-width: 72ch; }
 .article h2 { margin-top: 28px; }
