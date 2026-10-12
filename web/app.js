@@ -214,7 +214,10 @@ function worship(rec) {
     const g = rec.primary.chartPick.graha;
     bits.push(`Because the ${rec.primary.chartPick.role.toLowerCase()} donated this letter, the worship line is ${g.deity}: <span class="dev">${esc(g.mantra)}</span>.`);
   } else if (a.graha) {
-    bits.push(`The same letter opens ${a.graha.name}’s seed <span class="dev">${a.graha.beeja}</span>. The navagraha line is <span class="dev">${esc(a.graha.mantra)}</span>.`);
+    const same = rec.primary.text === a.graha.beeja;
+    bits.push(`${a.letter} is the opening letter of ${a.graha.name}’s seed <span class="dev">${a.graha.beeja}</span>, so the worship names ${a.graha.deity}. ${a.graha.name} in the birth chart was not the graha chosen.`);
+    if (!same) bits.push(`The seed given is <span class="dev">${esc(rec.primary.text)}</span>, the chakra’s joining of ${a.letter} with रीं. It is not ${a.graha.name}’s own <span class="dev">${a.graha.beeja}</span>.`);
+    bits.push(`The navagraha line is <span class="dev">${esc(a.graha.mantra)}</span>.`);
   }
   if (state.source === "nakshatra" && state.chart) {
     const moon = state.chart.bodies.find((b) => b.id === "chandra");
@@ -287,37 +290,59 @@ function walkthrough(rec) {
     );
   } else {
     const c = state.chart;
-    const lordBits = (c.lagnaLord.reasons || []).map((r) => `<li>${esc(r)}</li>`).join("");
+    const asLines = (rows) => rows.map((r) => `<p>${esc(r)}</p>`).join("");
+    const lordBits = asLines(c.lagnaLord.reasons || []);
     let yog = `<p>${esc(c.yogakarakaNote)}</p>`;
-    if (c.yogakaraka) {
-      yog += `<ul class="checks">${(c.yogakaraka.reasons || []).map((r) => `<li>${esc(r)}</li>`).join("")}</ul>`;
-    }
-    const refused = (rec.rejected || []).map((r) => `<li>${esc(r.reason)}</li>`).join("");
+    if (c.yogakaraka) yog += asLines(c.yogakaraka.reasons || []);
+    const refused = asLines((rec.rejected || []).map((r) => r.reason));
     push(
       "The lagna lord is asked first",
       `<p>Lagna is ${esc(c.lagna.sign)}. Its lord is tested before any letter in the third square. A lord is kept only when it is not debilitated, not combust, and stands in a kendra, a trikona, or its own, moolatrikona, or exalted sign, and when its consonant is not refused by the chakra.</p>
-       <ul class="checks">${lordBits}</ul>
+       ${lordBits}
        ${yog}
-       ${refused ? `<ul class="checks">${refused}</ul>` : ""}`
+       ${refused}`
     );
   }
 
   if (rec.primary?.assessed) {
     const a = rec.primary.assessed;
-    const joined = a.form.kind === "vowel"
-      ? `A vowel is kept with a bindu, so ${esc(a.letter)} becomes ${esc(a.form.text)}.`
-      : `The consonant is then joined to रीं. र belongs to Agni and ईं is kāmakalā, so ${esc(a.letter)} becomes ${esc(a.form.text)}.`;
+    const paras = [];
     if (rec.primary.chartPick) {
       const g = rec.primary.chartPick.graha;
-      push(
-        "The graha’s own seed is kept",
-        `<p>${esc(g.name)} passed, and ${esc(g.consonant)} survives the chakra, so the seed is that graha’s beeja ${esc(g.beeja)}, not merely the third-square letter. ${joined} The chatushka count of this letter is ${esc(showYoga(a.mm.quartet))}–${esc(showYoga(a.mm.place))}.</p>`
-      );
+      paras.push(`${esc(g.name)} is the ${esc(rec.primary.chartPick.role.toLowerCase())} and passed the strength screen. ${esc(g.consonant)} is kept by the chakra, so the chart gives ${esc(g.name)}’s own seed ${esc(g.beeja)}.`);
+      if (g.beeja !== a.form.text) {
+        paras.push(`Joined only by the chakra, the same letter would be ${esc(a.form.text)}. The seed is ${esc(g.beeja)} because a graha that passes is used in its own form.`);
+      }
     } else if (rec.primary.bucket !== "fallback") {
-      push(
-        "The letter becomes a seed",
-        `<p>${esc(a.letter)} in house ${a.cell.n} is the letter kept. ${joined} Row ${a.rc.rowStep} is ${esc(showYoga(a.rc.row))}, column ${a.rc.colStep} is ${esc(showYoga(a.rc.col))}. Mantra Mahodadhi’s chatushka reads ${esc(showYoga(a.mm.quartet))}–${esc(showYoga(a.mm.place))}: ${esc(a.mm.fruit)}</p>`
-      );
+      if (state.chart && !state.chart.time.timeUncertain && !rec.outside) {
+        const yog = state.chart.yogakaraka
+          ? "The yogakaraka did not give a letter either."
+          : "This lagna has no single yogakaraka, so no second graha is asked.";
+        paras.push(`The chart does not give the seed. ${yog} The choice returns to the square counted above.`);
+      }
+      if (rec.third && a.cell.n !== rec.third.n) {
+        paras.push(`No letter in the third square survived both counts, so the next letter kept is ${esc(a.letter)} in house ${a.cell.n}.`);
+      }
+      const rivals = [...(rec.groups.best || []), ...(rec.groups.suitable || [])]
+        .filter((x) => x.cell?.n === a.cell.n && x.letter !== a.letter);
+      if (rivals.length) {
+        paras.push(`The same house also holds ${rivals.map((x) => `${esc(x.letter)}, which would make ${esc(x.form.text)}`).join("; ")}. ${esc(a.letter)} is the one kept.`);
+      }
+      if (a.graha) {
+        paras.push(`${esc(a.letter)} is kept ahead of the others because it is the opening letter of ${esc(a.graha.name)}. ${esc(a.graha.name)} the planet was not selected from the horoscope. The name appears only because ${esc(a.letter)} begins ${esc(a.graha.beeja)}.`);
+      }
+      if (a.form.kind === "vowel") {
+        paras.push(`A vowel is kept with a bindu, so ${esc(a.letter)} becomes ${esc(a.form.text)}.`);
+      } else {
+        paras.push(`${esc(a.letter)} is joined to रीं. र is Agni and ईं is kāmakalā, so the seed is ${esc(a.form.text)}.`);
+        if (a.graha && a.graha.beeja !== a.form.text) {
+          paras.push(`That is why ${esc(a.form.text)} is given, and not ${esc(a.graha.name)}’s own seed ${esc(a.graha.beeja)}.`);
+        }
+      }
+      paras.push(`Row ${a.rc.rowStep} is ${esc(showYoga(a.rc.row))}, column ${a.rc.colStep} is ${esc(showYoga(a.rc.col))}. The chatushka reads ${esc(showYoga(a.mm.quartet))}–${esc(showYoga(a.mm.place))}.`);
+    }
+    if (paras.length) {
+      push(rec.primary.chartPick ? "Why this graha gives the seed" : "Why this seed is given", paras.map((p) => `<p>${p}</p>`).join(""));
     }
   } else if (rec.primary?.bucket === "fallback") {
     push(
