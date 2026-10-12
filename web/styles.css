@@ -251,6 +251,7 @@ input[type="text"], input[type="number"], input[type="date"], input[type="time"]
   border: 1px solid var(--line);
   background: #fff;
 }
+.bee-card.chosen { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
 .bee-card .seed { font-family: var(--dev); font-size: 32px; line-height: 1; }
 .bee-card p { margin: 2px 0; }
 .muted { color: var(--sub); }

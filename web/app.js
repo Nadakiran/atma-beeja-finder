@@ -506,31 +506,73 @@ function paintDetail() {
   </div>`;
 }
 
-function beeCard(a) {
+function foundFor() {
+  const name = state.name ? `“${state.name}”` : `the letter ${activeBase() || ""}`;
+  if (!state.chart) return `${name}, with birth skipped`;
+  const c = state.chart;
+  const place = c.place.label || `${c.place.latitude}, ${c.place.longitude}`;
+  return `${name}, ${c.time.local}, ${place}`;
+}
+
+function beeCard(a, chosen) {
   const g = a.graha;
-  return `<article class="bee-card">
-    <div><div class="seed">${esc(a.form.text)}</div><div class="small muted">${esc(a.form.iast)}</div></div>
+  const kept = chosen
+    ? `<p class="small"><strong>Find kept this letter.</strong>${chosen.note ? ` ${esc(chosen.note)}` : ""}</p>`
+    : "";
+  return `<article class="bee-card${chosen ? " chosen" : ""}">
+    <div><div class="seed">${esc(chosen?.seed || a.form.text)}</div><div class="small muted">${esc(chosen?.iast || a.form.iast)}</div></div>
     <div>
       <p><strong class="dev">${esc(a.letter)}</strong> · house ${a.cell.n} · ${esc(a.varga.devata)} · ${esc(a.varga.graha)}</p>
       <p class="small">Row ${showYoga(a.rc.row)}, column ${showYoga(a.rc.col)}. Chatushka ${showYoga(a.mm.quartet)}–${showYoga(a.mm.place)}.</p>
       <p class="small">${esc(a.meta.shakti ? a.meta.shakti + ". " : "")}${esc(a.meta.meaning)}</p>
+      ${kept}
       ${g ? `<p class="small">Worship line: <span class="dev">${esc(g.mantra)}</span></p>` : ""}
     </div>
   </article>`;
 }
 
 function paintBeejas() {
-  const rec = recNow();
   const box = $("beeja-lists");
-  if (!rec || rec.outside) {
-    box.innerHTML = `<div class="card"><p>${rec?.outside ? esc(rec.outside.note) + " The fallback is श्रीं." : "Choose a letter on Find. The lists are the 49 houses measured from that letter."}</p></div>`;
+  if (!box) return;
+  if (!answerIsCurrent()) {
+    box.innerHTML = `<div class="card"><p class="eyebrow">No result yet</p><p>Press Find. These lists are filled from the name and birth on the form. An earlier list is not kept.</p><div class="actions"><button class="btn" type="button" data-act="nav" data-view="find">Go to Find</button></div></div>`;
     return;
   }
-  const best = rec.groups.best.map(beeCard).join("") || `<p class="small">No letter is in the best square without an ari or a fruitless count.</p>`;
-  const suit = rec.groups.suitable.map(beeCard).join("") || `<p class="small">None.</p>`;
-  const avoid = rec.groups.avoid.map(beeCard).join("");
-  box.innerHTML = `
-    <section class="band best"><h2>Best possible</h2><p class="small">Third row and third column, or susiddha–susiddha, and not refused by the other count.</p><div class="beeja-list">${best}</div></section>
+  const rec = recNow();
+  if (!rec) {
+    box.innerHTML = `<div class="card"><p>Confirm a letter, then press Find.</p></div>`;
+    return;
+  }
+  const seed = rec.primary;
+  const notes = (rec.notes || []).map((n) => `<p class="small">${esc(n)}</p>`).join("");
+  const lead = `<div class="card hero">
+    <p class="eyebrow">${esc(seed.headline)}</p>
+    <div class="beeja">${esc(seed.text)}</div>
+    <p class="iast">${esc(seed.iast)}</p>
+    <p>Counted for ${esc(foundFor())}.</p>
+    ${notes}
+  </div>`;
+  if (rec.outside || seed.bucket === "fallback") {
+    box.innerHTML = `${lead}<div class="card"><p>${rec.outside ? esc(rec.outside.note) + " The seed is श्रीं." : "No letter both counts will keep. The seed is श्रीं."}</p></div>`;
+    return;
+  }
+  const kept = seed.assessed?.letter || null;
+  const chosenFor = (a) => {
+    if (!kept || a.letter !== kept) return null;
+    const own = seed.chartPick && seed.text !== a.form.text;
+    return {
+      seed: seed.text,
+      iast: seed.iast,
+      note: own ? `The seed is ${seed.text}, this graha’s own form. Joined only by the chakra, the same letter is ${a.form.text}.` : "",
+    };
+  };
+  const putKeptFirst = (list) => [...list].sort((a, b) => (b.letter === kept) - (a.letter === kept));
+  const cards = (list) => putKeptFirst(list).map((a) => beeCard(a, chosenFor(a))).join("");
+  const best = cards(rec.groups.best) || `<p class="small">No letter is in the best square without an ari or a fruitless count.</p>`;
+  const suit = cards(rec.groups.suitable) || `<p class="small">None.</p>`;
+  const avoid = cards(rec.groups.avoid);
+  box.innerHTML = `${lead}
+    <section class="band best"><h2>Best possible</h2><p class="small">Third row and third column, or susiddha–susiddha, and not refused by the other count. Measured from the letter in this Find.</p><div class="beeja-list">${best}</div></section>
     <section class="band suit"><h2>Suitable</h2><p class="small">Allowed by both counts, and not the best square.</p><div class="beeja-list">${suit}</div></section>
     <section class="band avoid"><h2>Not used</h2><p class="small">Fourth row or column, any ari pair, the fruitless sādhya–sādhya chatushka, and ऌ.</p><div class="beeja-list">${avoid}</div></section>`;
 }
@@ -751,6 +793,7 @@ async function calculate() {
     if (!$("tz").value.trim()) $("tz").value = data.time.timezone;
     markFound();
     paintChart();
+    paintBeejas();
     setView("find");
     setStep("result");
   } catch (e) {
@@ -779,6 +822,7 @@ function onClick(e) {
     state.source = "name";
     markFound();
     paintChart();
+    paintBeejas();
     setView("find");
     setStep("result");
   }
