@@ -15,7 +15,32 @@ for (const cell of CELLS) {
   for (const L of cell.letters) letterCell[L] = cell.n;
 }
 
-const consonantPriority = ["क", "ब", "भ", "म", "र", "व", "श", "स", "ह", "ग", "द", "प", "य", "न", "त", "थ", "ध", "ज", "च", "छ", "झ", "ञ", "ट", "ठ", "ड", "ढ", "ण", "ख", "घ", "ङ", "फ", "ल", "ष"];
+const AUSPICIOUS = ["क", "ब", "भ", "म", "र", "व", "श", "स", "ह"];
+const consonantPriority = [...AUSPICIOUS, "ग", "द", "प", "य", "न", "त", "थ", "ध", "ज", "च", "छ", "झ", "ञ", "ट", "ठ", "ड", "ढ", "ण", "ख", "घ", "ङ", "फ", "ल", "ष"];
+
+function namedOpen(cell, all) {
+  if (!cell) return [];
+  const here = all.filter((a) => a.cell && a.cell.n === cell.n && a.bucket !== "avoid");
+  return AUSPICIOUS.flatMap((L) => here.filter((a) => a.letter === L));
+}
+
+function chooseFromChakra(home, all) {
+  const third = cellAt(home.r + 2, home.c + 2);
+  const second = cellAt(home.r + 1, home.c + 1);
+  const thirdNamed = namedOpen(third, all);
+  if (thirdNamed.length) return { picks: thirdNamed, square: "third", cell: third };
+  const secondNamed = namedOpen(second, all);
+  if (secondNamed.length) return { picks: secondNamed, square: "second", cell: second };
+  const elsewhere = AUSPICIOUS.flatMap((L) => all.filter((a) => a.letter === L && a.bucket !== "avoid" && a.cell.n !== third.n && a.cell.n !== second.n));
+  const pool = elsewhere.some((a) => a.bucket === "best") ? elsewhere.filter((a) => a.bucket === "best") : elsewhere;
+  if (pool.length) {
+    const house = pool[0].cell.n;
+    return { picks: pool.filter((a) => a.cell.n === house), square: "other", cell: pool[0].cell };
+  }
+  const vowel = all.find((a) => a.cell?.n === third.n && a.bucket !== "avoid" && VOWEL_BEEJA[a.letter] && a.letter !== "ऌ");
+  if (vowel) return { picks: [vowel], square: "vowel", cell: third };
+  return { picks: [], square: null, cell: null };
+}
 
 export function showYoga(name) {
   return SHOW[name] || name;
@@ -148,7 +173,6 @@ export function assess(base, letter) {
   if (essay === "best") score += 200;
   if (mm.key === "Susiddha-Susiddha") score += 120;
   if (tantra === "strong") score += 40;
-  if (graha) score += 40;
   if (PREFER.has(letter) && !VOWEL_BEEJA[letter]) score += 30;
   if (VOWEL_BEEJA[letter] && letter !== "र") score -= 8;
   const pi = consonantPriority.indexOf(letter);
@@ -220,7 +244,10 @@ export function recommend(base, chart) {
     }
   }
 
-  let winner = chartPick ? chartPick.assessed : (groups.best[0] || groups.suitable[0] || null);
+  const choice = chartPick ? null : chooseFromChakra(home, all);
+  const picks = chartPick ? [chartPick.assessed] : (choice?.picks || []);
+  const winner = picks[0] || null;
+  const tied = picks.length > 1;
   let lead = chartPick ? "chart" : "chakra";
   const notes = [];
   if (!winner) {
@@ -228,26 +255,36 @@ export function recommend(base, chart) {
       base,
       home,
       third,
+      second: cellAt(home.r + 1, home.c + 1),
       groups,
       rejected,
-      primary: { text: "श्रीं", iast: "śrīṁ", letter: "श", bucket: "fallback", lead: "fallback", headline: "Fallback beeja" },
-      notes: ["No house both traditions will keep. The working method then uses श्रीं."],
+      primary: { text: "श्रीं", iast: "śrīṁ", letter: "श", bucket: "fallback", lead: "fallback", headline: "Fallback beeja", choices: [] },
+      notes: ["No house both traditions will keep, and no named consonant remains. The working method then uses श्रीं."],
     };
   }
 
   const form = winner.form;
-  let text = form.text;
-  let iast = form.iast;
-  let headline = "Atma beeja";
+  let text = tied ? picks.map((p) => p.form.text).join(" · ") : form.text;
+  let iast = tied ? picks.map((p) => p.form.iast).join(" · ") : form.iast;
+  let headline = tied ? "More than one seed" : "Atma beeja";
   if (chartPick && winner.letter === chartPick.graha.consonant) {
     text = chartPick.graha.beeja;
     iast = chartPick.graha.iast;
     headline = `${chartPick.role}'s beeja`;
     notes.push(`${chartPick.graha.name} is the ${chartPick.role.toLowerCase()} and ${chartPick.graha.consonant} survives the chakra, so the primary seed is the graha beeja ${text}.`);
     notes.push(`The akathaha joining of the same letter is ${form.text}.`);
+  } else if (tied) {
+    notes.push(`House ${winner.cell.n} holds ${picks.map((p) => p.letter).join(" and ")}. The essay names each of these among क ब भ म र व श स ह and does not rank one above another. Their seeds are ${picks.map((p) => p.form.text).join(", ")}.`);
+  } else if (choice?.square === "second") {
+    const left = third.letters.join(" ");
+    notes.push(`The third square is house ${third.n}, ${left}. Those letters share one count. None of them is in the set the essay names as making a very good bija, क ब भ म र व श स ह. ${winner.letter} is in the second square, house ${winner.cell.n}, and it is in that set, so the seed is ${text}.`);
+  } else if (choice?.square === "vowel") {
+    notes.push(`${winner.letter} is a vowel in the third square. No consonant from क ब भ म र व श स ह remained in a square the essay keeps, so the vowel is kept with a bindu as ${text}.`);
   } else {
-    notes.push(`${winner.letter} in house ${winner.cell.n} gives ${text}.`);
-    if (winner.graha) notes.push(`${winner.letter} is also the opening of ${winner.graha.name}'s own seed ${winner.graha.beeja}.`);
+    notes.push(`${winner.letter} in house ${winner.cell.n} is in the set the essay names as making a very good bija, so the seed is ${text}.`);
+  }
+  if (!chartPick) {
+    notes.push("The letter is joined to रीं. The essay adds no other letter in the place of र. क्लीं is named there only as a seed of the Bālā mantra.");
   }
   if (chart && chart.time.timeUncertain) {
     notes.push("The birth time was marked unknown, so the lagna is not used to choose the beeja.");
@@ -257,6 +294,7 @@ export function recommend(base, chart) {
     base,
     home,
     third,
+    second: cellAt(home.r + 1, home.c + 1),
     groups,
     rejected,
     notes,
@@ -268,6 +306,9 @@ export function recommend(base, chart) {
       lead,
       headline,
       assessed: winner,
+      choices: picks,
+      tied,
+      square: chartPick ? "chart" : choice?.square || null,
       graha: winner.graha,
       joined: form,
       chartPick,

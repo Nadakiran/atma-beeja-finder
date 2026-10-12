@@ -21,9 +21,14 @@ assert.equal(sha.row, "Susiddha");
 assert.equal(sha.col, "Susiddha");
 
 const rec = recommend("क", null);
-assert.equal(rec.primary.text, "ग्रीं", rec.primary.text);
-assert.equal(rec.primary.letter, "ग");
 assert.equal(rec.third.n, 11);
+assert.equal(rec.primary.text, "म्रीं", rec.primary.text);
+assert.equal(rec.primary.letter, "म");
+assert.equal(rec.primary.square, "second");
+assert.ok(!rec.third.letters.includes("म"));
+const sanjay = recommend("स", null);
+assert.equal(sanjay.primary.text, "श्रीं", sanjay.primary.text);
+assert.equal(sanjay.primary.square, "third");
 assert.equal(detectBase("Kumar"), "क");
 assert.equal(detectBase("कुमार"), "क");
 assert.equal(detectBase("Indira"), "इ");

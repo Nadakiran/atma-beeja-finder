@@ -318,26 +318,30 @@ function walkthrough(rec) {
         const yog = state.chart.yogakaraka
           ? "The yogakaraka did not give a letter either."
           : "This lagna has no single yogakaraka, so no second graha is asked.";
-        paras.push(`The chart does not give the seed. ${yog} The choice returns to the square counted above.`);
+        paras.push(`The chart does not give the seed. ${yog} The choice returns to the squares counted above.`);
       }
-      if (rec.third && a.cell.n !== rec.third.n) {
-        paras.push(`No letter in the third square survived both counts, so the next letter kept is ${esc(a.letter)} in house ${a.cell.n}.`);
-      }
-      const rivals = [...(rec.groups.best || []), ...(rec.groups.suitable || [])]
-        .filter((x) => x.cell?.n === a.cell.n && x.letter !== a.letter);
-      if (rivals.length) {
-        paras.push(`The same house also holds ${rivals.map((x) => `${esc(x.letter)}, which would make ${esc(x.form.text)}`).join("; ")}. ${esc(a.letter)} is the one kept.`);
-      }
-      if (a.graha) {
-        paras.push(`${esc(a.letter)} is kept ahead of the others because it is the opening letter of ${esc(a.graha.name)}. ${esc(a.graha.name)} the planet was not selected from the horoscope. The name appears only because ${esc(a.letter)} begins ${esc(a.graha.beeja)}.`);
-      }
-      if (a.form.kind === "vowel") {
-        paras.push(`A vowel is kept with a bindu, so ${esc(a.letter)} becomes ${esc(a.form.text)}.`);
-      } else {
-        paras.push(`${esc(a.letter)} is joined to रीं. र is Agni and ईं is kāmakalā, so the seed is ${esc(a.form.text)}.`);
-        if (a.graha && a.graha.beeja !== a.form.text) {
-          paras.push(`That is why ${esc(a.form.text)} is given, and not ${esc(a.graha.name)}’s own seed ${esc(a.graha.beeja)}.`);
+      const named = "क ब भ म र व श स ह";
+      if (rec.primary.square === "second" && rec.third) {
+        const shown = rec.third.letters.map((L) => {
+          const one = assess(rec.base, L);
+          return `${esc(L)} would make ${esc(one.form.text)}`;
+        }).join("; ");
+        paras.push(`The third square is house ${rec.third.n}: ${shown}. Every letter in that house has the same count. The essay then looks at the letters themselves. The only letter it refuses inside a square is ऌ. The consonants it names as making a very good bija are ${named}. None of those is in this square, so none of the three is taken as the seed.`);
+        paras.push(`The second square is house ${a.cell.n}. ${esc(a.letter)} is one of those named consonants, so the seed is taken from there.${a.letter === "म" ? " In the worked example for क, this is why म is kept and झ is left, and why ऌ is left." : ""}`);
+      } else if (rec.primary.tied) {
+        const forms = (rec.primary.choices || []).map((p) => `${esc(p.letter)} makes ${esc(p.form.text)}`).join("; ");
+        paras.push(`This house holds more than one of the named consonants: ${forms}. The essay lists them as examples and does not rank one above another.`);
+      } else if (rec.primary.square === "third") {
+        const others = rec.third.letters.filter((L) => L !== a.letter);
+        paras.push(`${esc(a.letter)} is the consonant in the third square that stands in ${named}.`);
+        if (others.length) {
+          paras.push(`The same house also holds ${others.map((L) => esc(L)).join(" ")}. They share the house. They are not in that named set, so they are not the seed. Opening a graha seed is not a reason to prefer one of them.`);
         }
+      } else if (rec.primary.square === "vowel") {
+        paras.push(`No consonant from ${named} remained in a square the essay keeps. ${esc(a.letter)} is a vowel in the third square, so it is kept with a bindu as ${esc(a.form.text)}.`);
+      }
+      if (a.form.kind !== "vowel") {
+        paras.push(`${esc(a.letter)} is joined to रीं. The essay says र is auspicious and powerful and belongs to Agni, and that ईं is kāmakalā. It does not add ल, or any other letter, in the place of र. क्लीं appears in that essay only as the second seed of the Bālā mantra, which is क joined to ल and ई. That is a different seed.`);
       }
       paras.push(`Row ${a.rc.rowStep} is ${esc(showYoga(a.rc.row))}, column ${a.rc.colStep} is ${esc(showYoga(a.rc.col))}. The chatushka reads ${esc(showYoga(a.mm.quartet))}–${esc(showYoga(a.mm.place))}.`);
     }
@@ -556,17 +560,17 @@ function paintBeejas() {
     box.innerHTML = `${lead}<div class="card"><p>${rec.outside ? esc(rec.outside.note) + " The seed is श्रीं." : "No letter both counts will keep. The seed is श्रीं."}</p></div>`;
     return;
   }
-  const kept = seed.assessed?.letter || null;
+  const keptLetters = new Set((seed.choices?.length ? seed.choices : seed.assessed ? [seed.assessed] : []).map((a) => a.letter));
   const chosenFor = (a) => {
-    if (!kept || a.letter !== kept) return null;
+    if (!keptLetters.has(a.letter)) return null;
     const own = seed.chartPick && seed.text !== a.form.text;
     return {
-      seed: seed.text,
-      iast: seed.iast,
+      seed: seed.tied ? a.form.text : seed.text,
+      iast: seed.tied ? a.form.iast : seed.iast,
       note: own ? `The seed is ${seed.text}, this graha’s own form. Joined only by the chakra, the same letter is ${a.form.text}.` : "",
     };
   };
-  const putKeptFirst = (list) => [...list].sort((a, b) => (b.letter === kept) - (a.letter === kept));
+  const putKeptFirst = (list) => [...list].sort((a, b) => keptLetters.has(b.letter) - keptLetters.has(a.letter));
   const cards = (list) => putKeptFirst(list).map((a) => beeCard(a, chosenFor(a))).join("");
   const best = cards(rec.groups.best) || `<p class="small">No letter is in the best square without an ari or a fruitless count.</p>`;
   const suit = cards(rec.groups.suitable) || `<p class="small">None.</p>`;
