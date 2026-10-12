@@ -321,27 +321,24 @@ function walkthrough(rec) {
         paras.push(`The chart does not give the seed. ${yog} The choice returns to the squares counted above.`);
       }
       const named = "क ब भ म र व श स ह";
-      if (rec.primary.square === "second" && rec.third) {
-        const shown = rec.third.letters.map((L) => {
-          const one = assess(rec.base, L);
-          return `${esc(L)} would make ${esc(one.form.text)}`;
-        }).join("; ");
-        paras.push(`The third square is house ${rec.third.n}: ${shown}. Every letter in that house has the same count. The essay then looks at the letters themselves. The only letter it refuses inside a square is ऌ. The consonants it names as making a very good bija are ${named}. None of those is in this square, so none of the three is taken as the seed.`);
-        paras.push(`The second square is house ${a.cell.n}. ${esc(a.letter)} is one of those named consonants, so the seed is taken from there.${a.letter === "म" ? " In the worked example for क, this is why म is kept and झ is left, and why ऌ is left." : ""}`);
+      if (rec.primary.tied && rec.primary.kind === "open") {
+        const forms = (rec.primary.choices || []).map((p) => `${esc(p.letter)} makes ${esc(p.form.text)}`).join("; ");
+        paras.push(`The best square is house ${a.cell.n}, so the seed stays there. A suitable letter is not used while this square still has a consonant. ${forms}. They share one count. The essay does not rank them, and opening a graha seed is not a reason to keep only one.`);
+      } else if (rec.primary.square === "second") {
+        paras.push(`The best square has no letter the count will keep, so the seed is ${esc(a.letter)} from the second square, house ${a.cell.n}.`);
       } else if (rec.primary.tied) {
         const forms = (rec.primary.choices || []).map((p) => `${esc(p.letter)} makes ${esc(p.form.text)}`).join("; ");
-        paras.push(`This house holds more than one of the named consonants: ${forms}. The essay lists them as examples and does not rank one above another.`);
-      } else if (rec.primary.square === "third") {
-        const others = rec.third.letters.filter((L) => L !== a.letter);
-        paras.push(`${esc(a.letter)} is the consonant in the third square that stands in ${named}.`);
-        if (others.length) {
-          paras.push(`The same house also holds ${others.map((L) => esc(L)).join(" ")}. They share the house. They are not in that named set, so they are not the seed. Opening a graha seed is not a reason to prefer one of them.`);
-        }
-      } else if (rec.primary.square === "vowel") {
-        paras.push(`No consonant from ${named} remained in a square the essay keeps. ${esc(a.letter)} is a vowel in the third square, so it is kept with a bindu as ${esc(a.form.text)}.`);
+        paras.push(`The best square holds more than one of the named consonants ${named}: ${forms}. The essay lists them as examples and does not rank one above another.`);
+      } else if (rec.primary.square === "third" && rec.primary.kind === "named") {
+        const others = (rec.third?.letters || []).filter((L) => L !== a.letter);
+        paras.push(`${esc(a.letter)} is the consonant in the best square that stands in ${named}.`);
+        if (others.length) paras.push(`The same house also holds ${others.map((L) => esc(L)).join(" ")}. They share the count. They are not in that named set, so they are not the seed.`);
+      } else if (rec.primary.kind === "vowel") {
+        paras.push(`The best square has no consonant the count will keep. ${esc(a.letter)} is its vowel, so it is kept with a bindu as ${esc(a.form.text)}.`);
       }
-      if (a.form.kind !== "vowel") {
-        paras.push(`${esc(a.letter)} is joined to रीं. The essay says र is auspicious and powerful and belongs to Agni, and that ईं is kāmakalā. It does not add ल, or any other letter, in the place of र. क्लीं appears in that essay only as the second seed of the Bālā mantra, which is क joined to ल and ई. That is a different seed.`);
+      if ((rec.primary.choices || [a]).every((p) => p.form?.kind !== "vowel")) {
+        const letters = (rec.primary.choices || [a]).map((p) => esc(p.letter)).join(" and ");
+        paras.push(`${letters} ${rec.primary.tied ? "are" : "is"} joined to रीं. The essay says र is auspicious and powerful and belongs to Agni, and that ईं is kāmakalā. It does not add ल, or any other letter, in the place of र. क्लीं appears in that essay only as the second seed of the Bālā mantra, which is क joined to ल and ई. That is a different seed.`);
       }
       paras.push(`Row ${a.rc.rowStep} is ${esc(showYoga(a.rc.row))}, column ${a.rc.colStep} is ${esc(showYoga(a.rc.col))}. The chatushka reads ${esc(showYoga(a.mm.quartet))}–${esc(showYoga(a.mm.place))}.`);
     }

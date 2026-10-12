@@ -22,10 +22,10 @@ assert.equal(sha.col, "Susiddha");
 
 const rec = recommend("क", null);
 assert.equal(rec.third.n, 11);
-assert.equal(rec.primary.text, "म्रीं", rec.primary.text);
-assert.equal(rec.primary.letter, "म");
-assert.equal(rec.primary.square, "second");
-assert.ok(!rec.third.letters.includes("म"));
+assert.equal(rec.primary.square, "third");
+assert.equal(rec.primary.kind, "open");
+assert.equal(rec.primary.text, "ग्रीं · ध्रीं", rec.primary.text);
+assert.deepEqual(rec.primary.choices.map((p) => p.letter), ["ग", "ध"]);
 const sanjay = recommend("स", null);
 assert.equal(sanjay.primary.text, "श्रीं", sanjay.primary.text);
 assert.equal(sanjay.primary.square, "third");

@@ -18,28 +18,26 @@ for (const cell of CELLS) {
 const AUSPICIOUS = ["क", "ब", "भ", "म", "र", "व", "श", "स", "ह"];
 const consonantPriority = [...AUSPICIOUS, "ग", "द", "प", "य", "न", "त", "थ", "ध", "ज", "च", "छ", "झ", "ञ", "ट", "ठ", "ड", "ढ", "ण", "ख", "घ", "ङ", "फ", "ल", "ष"];
 
-function namedOpen(cell, all) {
+function openIn(cell, all) {
   if (!cell) return [];
-  const here = all.filter((a) => a.cell && a.cell.n === cell.n && a.bucket !== "avoid");
-  return AUSPICIOUS.flatMap((L) => here.filter((a) => a.letter === L));
+  return all.filter((a) => a.cell && a.cell.n === cell.n && a.bucket !== "avoid" && a.letter !== "ऌ");
+}
+
+function chooseCell(cell, all, square) {
+  const here = openIn(cell, all);
+  const named = AUSPICIOUS.flatMap((L) => here.filter((a) => a.letter === L));
+  if (named.length) return { picks: named, square, cell, kind: "named" };
+  const consonants = here.filter((a) => !VOWEL_BEEJA[a.letter]);
+  if (consonants.length) return { picks: consonants, square, cell, kind: "open" };
+  const vowel = here.find((a) => VOWEL_BEEJA[a.letter]);
+  if (vowel) return { picks: [vowel], square, cell, kind: "vowel" };
+  return null;
 }
 
 function chooseFromChakra(home, all) {
   const third = cellAt(home.r + 2, home.c + 2);
   const second = cellAt(home.r + 1, home.c + 1);
-  const thirdNamed = namedOpen(third, all);
-  if (thirdNamed.length) return { picks: thirdNamed, square: "third", cell: third };
-  const secondNamed = namedOpen(second, all);
-  if (secondNamed.length) return { picks: secondNamed, square: "second", cell: second };
-  const elsewhere = AUSPICIOUS.flatMap((L) => all.filter((a) => a.letter === L && a.bucket !== "avoid" && a.cell.n !== third.n && a.cell.n !== second.n));
-  const pool = elsewhere.some((a) => a.bucket === "best") ? elsewhere.filter((a) => a.bucket === "best") : elsewhere;
-  if (pool.length) {
-    const house = pool[0].cell.n;
-    return { picks: pool.filter((a) => a.cell.n === house), square: "other", cell: pool[0].cell };
-  }
-  const vowel = all.find((a) => a.cell?.n === third.n && a.bucket !== "avoid" && VOWEL_BEEJA[a.letter] && a.letter !== "ऌ");
-  if (vowel) return { picks: [vowel], square: "vowel", cell: third };
-  return { picks: [], square: null, cell: null };
+  return chooseCell(third, all, "third") || chooseCell(second, all, "second") || { picks: [], square: null, cell: null, kind: null };
 }
 
 export function showYoga(name) {
@@ -273,12 +271,16 @@ export function recommend(base, chart) {
     headline = `${chartPick.role}'s beeja`;
     notes.push(`${chartPick.graha.name} is the ${chartPick.role.toLowerCase()} and ${chartPick.graha.consonant} survives the chakra, so the primary seed is the graha beeja ${text}.`);
     notes.push(`The akathaha joining of the same letter is ${form.text}.`);
+  } else if (tied && choice?.kind === "named") {
+    notes.push(`House ${winner.cell.n} is the best square, and it holds ${picks.map((p) => p.letter).join(" and ")}. The essay names each of these among क ब भ म र व श स ह and does not rank one above another. Their seeds are ${picks.map((p) => p.form.text).join(", ")}.`);
   } else if (tied) {
-    notes.push(`House ${winner.cell.n} holds ${picks.map((p) => p.letter).join(" and ")}. The essay names each of these among क ब भ म र व श स ह and does not rank one above another. Their seeds are ${picks.map((p) => p.form.text).join(", ")}.`);
+    const where = choice?.square === "third"
+      ? "The best square is kept, and a suitable letter is not used while it still has a consonant."
+      : "The best square has no letter left, so the second square is used.";
+    notes.push(`${where} House ${winner.cell.n} holds ${picks.map((p) => p.letter).join(" and ")}. They share one count. The essay does not rank them. Their seeds are ${picks.map((p) => p.form.text).join(" and ")}.`);
   } else if (choice?.square === "second") {
-    const left = third.letters.join(" ");
-    notes.push(`The third square is house ${third.n}, ${left}. Those letters share one count. None of them is in the set the essay names as making a very good bija, क ब भ म र व श स ह. ${winner.letter} is in the second square, house ${winner.cell.n}, and it is in that set, so the seed is ${text}.`);
-  } else if (choice?.square === "vowel") {
+    notes.push(`The best square has no letter the count will keep. ${winner.letter} is in the second square, house ${winner.cell.n}, so the seed is ${text}.`);
+  } else if (choice?.kind === "vowel") {
     notes.push(`${winner.letter} is a vowel in the third square. No consonant from क ब भ म र व श स ह remained in a square the essay keeps, so the vowel is kept with a bindu as ${text}.`);
   } else {
     notes.push(`${winner.letter} in house ${winner.cell.n} is in the set the essay names as making a very good bija, so the seed is ${text}.`);
@@ -308,6 +310,7 @@ export function recommend(base, chart) {
       assessed: winner,
       choices: picks,
       tied,
+      kind: chartPick ? "chart" : choice?.kind || null,
       square: chartPick ? "chart" : choice?.square || null,
       graha: winner.graha,
       joined: form,
