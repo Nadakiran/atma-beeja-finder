@@ -297,7 +297,7 @@ function walkthrough(rec) {
     const refused = asLines((rec.rejected || []).map((r) => r.reason));
     push(
       "The lagna lord is asked first",
-      `<p>Lagna is ${esc(c.lagna.sign)}. Its lord is tested before any letter in the third square. A lord is kept only when its shadbala reaches the required pinda, it is not debilitated, not combust, and it stands in a kendra, a trikona, or its own, moolatrikona, or exalted sign, and when its consonant is not refused by the chakra.</p>
+      `<p>Only the name and the birth on the form are used${state.name ? `: “${esc(state.name)}”` : ""}, ${esc(c.time.local)}, ${esc(c.place.label || `${c.place.latitude}, ${c.place.longitude}`)}. Lagna is ${esc(c.lagna.sign)} ${dms(c.lagna.degreeInSign)}. Its lord is tested before any letter in the third square. A lord is kept only when its shadbala reaches the required pinda, it is not debilitated, not combust, and it stands in a kendra, a trikona, or its own, moolatrikona, or exalted sign, and when its consonant is not refused by the chakra. The house is the count of signs from that lagna to the graha’s sign.</p>
        ${lordBits}
        ${yog}
        ${refused}`
@@ -575,7 +575,7 @@ function paintChart() {
     <div class="charts">
       <div class="card">
         <h2>South Indian</h2>
-        <p class="small muted">Signs stay fixed. The lagna sign is marked. The small number is the house, counted from the lagna.</p>
+        <p class="small muted">Signs stay fixed. The lagna sign is marked. The number in each box is the house, counted sign by sign from that lagna. The next sign is house 2.</p>
         <div class="si">
           ${cells}
           <div class="si-center">
@@ -590,7 +590,7 @@ function paintChart() {
       </div>
       <div class="card">
         <h2>North Indian</h2>
-        <p class="small muted">Houses stay fixed. House 1 is the top diamond. Signs move.</p>
+        <p class="small muted">Houses stay fixed. House 1 is the top diamond, then anticlockwise, so house 2 is the upper left. The sign name is written in the house it occupies for this birth.</p>
         ${north}
       </div>
     </div>

@@ -198,7 +198,15 @@ def _combust(pid: str, lon: float, sun: float, retro: bool) -> bool:
     return _ang(lon, sun) <= orbs[pid]
 
 
-def _screen(pid: str, body: dict, shadbala: dict | None, time_unknown: bool) -> dict:
+def _ord(n: int) -> str:
+    if 10 <= n % 100 <= 20:
+        suffix = "th"
+    else:
+        suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
+
+
+def _screen(pid: str, body: dict, shadbala: dict | None, time_unknown: bool, lagna_name: str) -> dict:
     """The lagna lord is kept only when the essays' strength marks all hold.
 
     Those marks are: shadbala at or above the required pinda, a kendra or
@@ -233,14 +241,18 @@ def _screen(pid: str, body: dict, shadbala: dict | None, time_unknown: bool) -> 
         reasons.append(f"{NAMES[pid]} is combust.")
     else:
         reasons.append(f"{NAMES[pid]} is not combust.")
+    reasons.append(
+        f"{NAMES[pid]} is in {body['sign']}. "
+        f"From the {lagna_name} lagna, {body['sign']} is the {_ord(house)} house."
+    )
     if kendra and trikona:
-        reasons.append(f"{NAMES[pid]} is in house {house}, which is both a kendra and a trikona.")
+        reasons.append(f"The {_ord(house)} house is both a kendra and a trikona.")
     elif kendra:
-        reasons.append(f"{NAMES[pid]} is in house {house}, a kendra.")
+        reasons.append(f"The {_ord(house)} house is a kendra.")
     elif trikona:
-        reasons.append(f"{NAMES[pid]} is in house {house}, a trikona.")
+        reasons.append(f"The {_ord(house)} house is a trikona.")
     else:
-        reasons.append(f"{NAMES[pid]} is in house {house}, neither a kendra nor a trikona.")
+        reasons.append(f"The {_ord(house)} house is neither a kendra nor a trikona.")
     if not placed and not debilitated:
         reasons.append("House and sign together are not strong enough for this screen.")
     if shadbala:
@@ -473,10 +485,10 @@ def compute_chart(
         "lagna": lagna,
         "bodies": bodies,
         "shadbala": shadbala,
-        "lagnaLord": _screen(lord_id, by_id[lord_id], shadbala["planets"][lord_id], time_unknown),
+        "lagnaLord": _screen(lord_id, by_id[lord_id], shadbala["planets"][lord_id], time_unknown, lagna["sign"]),
         "yogakaraka": None
         if yog_id is None
-        else _screen(yog_id, by_id[yog_id], shadbala["planets"][yog_id], time_unknown),
+        else _screen(yog_id, by_id[yog_id], shadbala["planets"][yog_id], time_unknown, lagna["sign"]),
         "yogakarakaNote": (
             "This lagna is one of Taurus, Cancer, Leo, Libra, Capricorn, Aquarius, which have a single yogakaraka."
             if yog_id
