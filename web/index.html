@@ -57,10 +57,10 @@
           <div class="card stack">
             <div class="why">
               <strong>How this step is counted.</strong>
-              <p>The whole name is not placed on the chakra. The first syllable is reduced to its base letter. In कुमार the first syllable is कु, which is क with the vowel उ, so the letter that enters is क. An English spelling is only a hint, because it cannot tell त from ट, or श from ष. The letter you confirm here is the letter the later steps measure.</p>
+              <p>Only the first sound of this name is counted. A vowel written after that sound is dropped. Confirm the Sanskrit letter. An English spelling cannot tell त from ट, or श from ष.</p>
             </div>
             <label class="field">Name you are called by
-              <input id="name" type="text" autocomplete="off" placeholder="Kumar, or कुमार" spellcheck="false">
+              <input id="name" type="text" autocomplete="off" placeholder="The name people use" spellcheck="false">
             </label>
             <div id="guess"></div>
             <p id="chosen" class="small muted">No letter confirmed yet.</p>
@@ -71,7 +71,6 @@
             </div>
             <div class="actions">
               <button class="btn" id="to-birth" type="button" data-act="step" data-step="birth" disabled>Continue to birth details</button>
-              <button class="btn-quiet" type="button" data-act="preset" data-preset="kumar">Fill Kumar</button>
             </div>
           </div>
         </div>
@@ -116,16 +115,15 @@
             </div>
             <p id="chart-error" class="warn" hidden></p>
             <div class="actions">
-              <button class="btn" id="calc" type="button">Find the beeja</button>
-              <button class="btn-quiet" id="skip-birth" type="button" data-act="skip-birth">Skip birth details</button>
-              <button class="btn-quiet" id="sample" type="button">Fill a sample: Delhi, 15 Aug 1990, 10:30</button>
+              <button class="btn" id="calc" type="button">Find</button>
+              <button class="btn-quiet" id="skip-birth" type="button" data-act="skip-birth">Find without birth</button>
             </div>
           </div>
         </div>
 
         <div id="step-result" class="step-panel" hidden>
           <div id="hero"></div>
-          <div class="grid-2">
+          <div class="stack">
             <div class="card" id="calc-steps"></div>
             <div class="card" id="find-side"></div>
           </div>

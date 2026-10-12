@@ -13,6 +13,8 @@ const state = {
   node: "mean",
   chart: null,
   birthSkipped: false,
+  found: false,
+  entryKey: "",
   name: "",
 };
 
@@ -64,7 +66,10 @@ function setView(view) {
   });
   if (view === "chakra") paintChakra();
   if (view === "beejas") paintBeejas();
-  if (view === "find") paintFind();
+  if (view === "find" && state.step === "result") {
+    if (answerIsCurrent()) paintFind();
+    else showUnfound();
+  }
 }
 
 function setPressed(group, attr, value) {
@@ -73,11 +78,60 @@ function setPressed(group, attr, value) {
   });
 }
 
+function entryKey() {
+  return [
+    ($("name")?.value || "").trim(),
+    state.base || "",
+    state.source,
+    $("date")?.value || "",
+    $("time")?.value || "",
+    $("lat")?.value || "",
+    $("lon")?.value || "",
+    ($("tz")?.value || "").trim(),
+    $("unknown")?.checked ? "1" : "0",
+    state.node,
+    ($("place")?.value || "").trim(),
+  ].join("|");
+}
+
+function markFound() {
+  state.found = true;
+  state.entryKey = entryKey();
+}
+
+function answerIsCurrent() {
+  return state.found && state.entryKey === entryKey();
+}
+
+function clearAnswerDom() {
+  if ($("hero")) $("hero").innerHTML = "";
+  if ($("calc-steps")) $("calc-steps").innerHTML = "";
+  if ($("find-side")) $("find-side").innerHTML = "";
+}
+
+function showUnfound() {
+  clearAnswerDom();
+  if (!$("hero")) return;
+  $("hero").innerHTML = `<div class="card hero"><p class="eyebrow">No result yet</p><p>Press Find. This page calculates the name and birth that are on the form now. An earlier result is not kept.</p><div class="actions"><button class="btn" type="button" data-act="step" data-step="birth">Go to birth and Find</button></div></div>`;
+}
+
+function onEntryEdit() {
+  if (!state.found) return;
+  if (entryKey() === state.entryKey) return;
+  state.found = false;
+  state.chart = null;
+  state.birthSkipped = false;
+  clearAnswerDom();
+  paintChart();
+  paintChakra();
+  paintBeejas();
+  if (state.step === "result") showUnfound();
+}
+
 function setStep(step) {
   if ((step === "birth" || step === "result") && !state.base && !(state.source === "nakshatra" && state.chart)) {
     step = "name";
   }
-  if (step === "result" && !state.chart) state.birthSkipped = true;
   state.step = step;
   for (const id of ["name", "birth", "result"]) {
     const el = $(`step-${id}`);
@@ -93,7 +147,10 @@ function setStep(step) {
     $("find-lede").textContent = copy[1];
   }
   if (step === "name") paintName();
-  if (step === "result") paintFind();
+  if (step === "result") {
+    if (answerIsCurrent()) paintFind();
+    else showUnfound();
+  }
 }
 
 function paintName() {
@@ -128,6 +185,7 @@ function paintName() {
   const next = $("to-birth");
   if (next) next.disabled = !state.base;
   if ($("picker")) paintPicker();
+  onEntryEdit();
 }
 
 function paintPicker() {
@@ -178,10 +236,13 @@ function walkthrough(rec) {
       `<p>Each nakshatra is 13°20′, and each of its four padas is 3°20′. The Moon is in ${esc(p.nak.name)}, pada ${moon.pada}, syllable ${esc(p.pada.syl)}. The base of that syllable is ${esc(rec.base)}. Mantra Mahodadhi 24.2 allows this janma name in place of the called name.${state.chart.time.timeUncertain ? " The birth time was unknown, so this pada is the noon position." : ""}</p>`
     );
   } else {
-    push(
-      "The name becomes one letter",
-      `<p>${state.name ? `From “${esc(state.name)}”, ` : ""}only the first Sanskrit sound is kept, and a following vowel is dropped. The letter that enters the chakra is ${esc(rec.base)}.</p>`
-    );
+    const guessed = state.name ? detectBase(state.name) : null;
+    const named = !state.name
+      ? `The confirmed letter is ${esc(rec.base)}.`
+      : guessed && guessed !== rec.base
+        ? `The spelling “${esc(state.name)}” suggests ${esc(guessed)}. The letter you confirmed is ${esc(rec.base)}, so that is the letter counted.`
+        : `From “${esc(state.name)}”, the first sound kept is ${esc(rec.base)}. A vowel after that sound is dropped.`;
+    push("The name becomes one letter", `<p>${named}</p>`);
   }
 
   if (rec.outside) {
@@ -445,7 +506,7 @@ function paintBeejas() {
   const avoid = rec.groups.avoid.map(beeCard).join("");
   box.innerHTML = `
     <section class="band best"><h2>Best possible</h2><p class="small">Third row and third column, or susiddha–susiddha, and not refused by the other count.</p><div class="beeja-list">${best}</div></section>
-    <section class="band suit"><h2>Suitable</h2><p class="small">Allowed by both counts, and not the first square. The Kumar example’s म्रीं lives here when the letter is क.</p><div class="beeja-list">${suit}</div></section>
+    <section class="band suit"><h2>Suitable</h2><p class="small">Allowed by both counts, and not the best square.</p><div class="beeja-list">${suit}</div></section>
     <section class="band avoid"><h2>Not used</h2><p class="small">Fourth row or column, any ari pair, the fruitless sādhya–sādhya chatushka, and ऌ.</p><div class="beeja-list">${avoid}</div></section>`;
 }
 
@@ -528,7 +589,6 @@ function paintChart() {
         <button class="btn secondary" data-act="use-janma">Use the janma letter ${esc(pada.base)} for the beeja</button>
       </div>
     </div>`;
-  paintFind();
 }
 
 function lagnaRow(c) {
@@ -617,7 +677,9 @@ async function calculate() {
     }
     state.chart = data;
     state.birthSkipped = false;
+    state.source = "name";
     if (!$("tz").value.trim()) $("tz").value = data.time.timezone;
+    markFound();
     paintChart();
     setView("find");
     setStep("result");
@@ -626,7 +688,7 @@ async function calculate() {
     err.textContent = e.message || "The chart could not be computed.";
   } finally {
     btn.disabled = false;
-    btn.textContent = "Find the beeja";
+    btn.textContent = "Find";
   }
 }
 
@@ -645,6 +707,7 @@ function onClick(e) {
     state.chart = null;
     state.birthSkipped = true;
     state.source = "name";
+    markFound();
     paintChart();
     setView("find");
     setStep("result");
@@ -656,8 +719,7 @@ function onClick(e) {
   if (act === "source") {
     state.source = btn.dataset.source;
     setPressed("source", "source", state.source);
-    if (state.source === "nakshatra" && !state.chart) setView("chart");
-    paintFind();
+    onEntryEdit();
     paintChakra();
     paintBeejas();
   }
@@ -667,7 +729,7 @@ function onClick(e) {
     paintName();
     paintChakra();
     paintBeejas();
-    if (state.step === "result") paintFind();
+    if (state.step === "result" && !answerIsCurrent()) showUnfound();
   }
   if (act === "test") {
     state.test = btn.dataset.letter;
@@ -681,6 +743,7 @@ function onClick(e) {
   if (act === "node") {
     state.node = btn.dataset.node;
     setPressed("node", "node", state.node);
+    onEntryEdit();
   }
   if (act === "copy") {
     const text = btn.dataset.copy;
@@ -690,27 +753,22 @@ function onClick(e) {
       setTimeout(() => { btn.textContent = old; }, 900);
     }).catch(() => {});
   }
-  if (act === "preset" && btn.dataset.preset === "kumar") {
-    $("name").value = "Kumar";
-    state.name = "Kumar";
-    state.base = "क";
-    state.source = "name";
+  if (act === "use-janma") {
+    if (!state.chart) return;
+    state.source = "nakshatra";
+    markFound();
     setView("find");
-    setStep("name");
-    paintName();
-  }
-  if (act === "preset" && btn.dataset.preset === "devadatta") {
-    $("name").value = "Devadatta";
-    state.name = "Devadatta";
-    state.base = "द";
-    state.test = "ऐ";
-    state.source = "name";
-    state.mode = "tantra";
-    setPressed("source", "source", "name");
-    setPressed("mode", "mode", "tantra");
-    setView("chakra");
+    setStep("result");
     paintChakra();
-    paintFind();
+    paintBeejas();
+  }
+  if (act === "use-name") {
+    state.source = "name";
+    markFound();
+    setView("find");
+    setStep("result");
+    paintChakra();
+    paintBeejas();
   }
   if (act === "place") {
     const row = $("places")._rows?.[Number(btn.dataset.i)];
@@ -720,45 +778,26 @@ function onClick(e) {
     $("lon").value = row.longitude;
     $("tz").value = row.timezone || "";
     $("places").innerHTML = "";
+    onEntryEdit();
   }
-  if (act === "use-janma") {
-    state.source = "nakshatra";
-    setView("find");
-    setStep("result");
-    paintChakra();
-    paintBeejas();
-  }
-  if (act === "use-name") {
-    state.source = "name";
-    setView("find");
-    setStep("result");
-    paintChakra();
-    paintBeejas();
-  }
-}
-
-function fillSample() {
-  $("place").value = "New Delhi, Delhi, India";
-  $("lat").value = "28.6139";
-  $("lon").value = "77.2090";
-  $("tz").value = "Asia/Kolkata";
-  $("date").value = "1990-08-15";
-  $("time").value = "10:30";
-  $("unknown").checked = false;
-  $("time").disabled = false;
 }
 
 let placeTimer;
 function bind() {
   document.body.addEventListener("click", onClick);
   $("name").addEventListener("input", paintName);
+  const edit = () => onEntryEdit();
+  ["date", "time", "lat", "lon", "tz"].forEach((id) => $(id).addEventListener("input", edit));
   $("place").addEventListener("input", () => {
+    onEntryEdit();
     clearTimeout(placeTimer);
     placeTimer = setTimeout(() => searchPlaces($("place").value), 280);
   });
   $("calc").addEventListener("click", calculate);
-  $("sample").addEventListener("click", fillSample);
-  $("unknown").addEventListener("change", () => { $("time").disabled = $("unknown").checked; });
+  $("unknown").addEventListener("change", () => {
+    $("time").disabled = $("unknown").checked;
+    onEntryEdit();
+  });
   buildChakra();
   paintName();
   paintChakra();
